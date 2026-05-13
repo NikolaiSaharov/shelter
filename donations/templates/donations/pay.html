@@ -1,0 +1,329 @@
+{% extends 'base.html' %}
+{% block title %}Оплата пожертвования — Анималити{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+      <div class="card shadow-sm" style="border-radius: 16px; overflow: hidden;">
+        <div class="card-body p-5">
+          <div class="text-center mb-4">
+            <h3 class="fw-bold mb-2" style="color: #2b1d16;">Оплата пожертвования</h3>
+            <p class="lead mb-0">
+              Сумма: <strong class="text-warning" style="font-size: 1.5rem;">{{ data.amt }} ₽</strong>
+            </p>
+          </div>
+
+          <p class="text-center text-muted small mb-4">
+            <i class="bi bi-credit-card me-1"></i> Оплата банковской картой
+          </p>
+
+          <!-- Форма оплаты картой -->
+          <div id="cardPaymentBlock" class="payment-block">
+            <form id="cardPaymentForm" method="get" action="{% url 'donation_confirm' %}">
+              <input type="hidden" name="token" value="{{ token }}">
+              <div class="mb-4">
+                <label for="cardNumber" class="form-label fw-semibold">
+                  <i class="bi bi-credit-card me-2"></i> Номер карты
+                </label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-lg" 
+                  id="cardNumber" 
+                  name="card_number"
+                  placeholder="0000 0000 0000 0000"
+                  maxlength="19"
+                  required
+                  autocomplete="off"
+                >
+                <div class="invalid-feedback">Введите корректный номер карты</div>
+                <div class="valid-feedback">Номер карты корректен</div>
+              </div>
+
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label for="cardExpiry" class="form-label fw-semibold">
+                    <i class="bi bi-calendar me-2"></i> Срок действия
+                  </label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-lg" 
+                    id="cardExpiry" 
+                    name="card_expiry"
+                    placeholder="ММ/ГГ"
+                    maxlength="5"
+                    required
+                    autocomplete="off"
+                  >
+                  <div class="invalid-feedback">Введите дату в формате ММ/ГГ</div>
+                </div>
+                <div class="col-md-6">
+                  <label for="cardCvv" class="form-label fw-semibold">
+                    <i class="bi bi-shield-lock me-2"></i> CVV
+                  </label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-lg" 
+                    id="cardCvv" 
+                    name="card_cvv"
+                    placeholder="000"
+                    maxlength="4"
+                    required
+                    autocomplete="off"
+                  >
+                  <div class="invalid-feedback">Введите корректный CVV</div>
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <label for="cardHolder" class="form-label fw-semibold">
+                  <i class="bi bi-person me-2"></i> Имя владельца карты
+                </label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-lg" 
+                  id="cardHolder" 
+                  name="card_holder"
+                  placeholder="IVAN IVANOV"
+                  required
+                  autocomplete="off"
+                >
+                <div class="invalid-feedback">Введите имя владельца карты</div>
+              </div>
+
+              <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-warning btn-lg" id="cardSubmitBtn" disabled>
+                  <i class="bi bi-credit-card"></i> Оплатить {{ data.amt }} ₽
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="text-center mt-4">
+            <a class="btn btn-outline-secondary btn-sm" href="/animals/catalog/">
+              Отмена
+            </a>
+          </div>
+
+          <div class="mt-4 text-center">
+            <div class="d-flex align-items-center justify-content-center text-muted small">
+              <i class="bi bi-shield-check me-2"></i>
+              <span>Безопасная имитация оплаты. Данные карты не сохраняются.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Форматирование номера карты
+  const cardNumberInput = document.getElementById('cardNumber');
+  cardNumberInput.addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\s/g, '');
+    value = value.replace(/\D/g, '');
+    
+    if (value.length > 16) value = value.slice(0, 16);
+    
+    let formatted = value.match(/.{1,4}/g)?.join(' ') || value;
+    e.target.value = formatted;
+    
+    validateCard();
+  });
+
+  // Валидация номера карты (проверяем только длину и цифры, без жёсткого алгоритма Луна)
+  function validateCard() {
+    const cardNumber = cardNumberInput.value.replace(/\s/g, '');
+    let isValid = false;
+    
+    if (cardNumber.length === 0) {
+      cardNumberInput.classList.remove('is-invalid', 'is-valid');
+      return false;
+    }
+    
+  if (cardNumber.length >= 13 && cardNumber.length <= 19 && /^\d+$/.test(cardNumber)) {
+    isValid = true;
+  }
+    
+    cardNumberInput.classList.remove('is-invalid', 'is-valid');
+    if (isValid) {
+      cardNumberInput.classList.add('is-valid');
+    } else {
+      cardNumberInput.classList.add('is-invalid');
+    }
+    
+    setTimeout(checkFormValidity, 0);
+    return isValid;
+  }
+
+  // Форматирование даты MM/YY
+  const cardExpiryInput = document.getElementById('cardExpiry');
+  cardExpiryInput.addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 4) value = value.slice(0, 4);
+    
+    if (value.length >= 2) {
+      value = value.slice(0, 2) + '/' + value.slice(2);
+    }
+    
+    e.target.value = value;
+    validateExpiry();
+  });
+
+  // Валидация даты
+  function validateExpiry() {
+    const expiry = cardExpiryInput.value;
+    
+    if (expiry.length === 0) {
+      cardExpiryInput.classList.remove('is-invalid', 'is-valid');
+      return false;
+    }
+    
+    const regex = /^(0[1-9]|1[0-2])\/([0-9]{2})$/;
+    const match = expiry.match(regex);
+    
+    if (!match) {
+      cardExpiryInput.classList.remove('is-valid');
+      cardExpiryInput.classList.add('is-invalid');
+      setTimeout(checkFormValidity, 0);
+      return false;
+    }
+    
+    const month = parseInt(match[1]);
+    const year = parseInt('20' + match[2]);
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+    const expiryDate = new Date(year, month, 0);
+    expiryDate.setHours(23, 59, 59, 999);
+    
+    const isValid = expiryDate >= currentDate && month >= 1 && month <= 12;
+    cardExpiryInput.classList.remove('is-invalid', 'is-valid');
+    cardExpiryInput.classList.add(isValid ? 'is-valid' : 'is-invalid');
+    
+    setTimeout(checkFormValidity, 0);
+    return isValid;
+  }
+
+  // Форматирование CVV
+  const cardCvvInput = document.getElementById('cardCvv');
+  cardCvvInput.addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 4) value = value.slice(0, 4);
+    e.target.value = value;
+    validateCvv();
+  });
+
+  // Валидация CVV
+  function validateCvv() {
+    const cvv = cardCvvInput.value;
+    
+    if (cvv.length === 0) {
+      cardCvvInput.classList.remove('is-invalid', 'is-valid');
+      return false;
+    }
+    
+    const isValid = /^\d{3,4}$/.test(cvv);
+    cardCvvInput.classList.remove('is-invalid', 'is-valid');
+    cardCvvInput.classList.add(isValid ? 'is-valid' : 'is-invalid');
+    
+    setTimeout(checkFormValidity, 0);
+    return isValid;
+  }
+
+  // Валидация имени владельца
+  const cardHolderInput = document.getElementById('cardHolder');
+  cardHolderInput.addEventListener('input', function(e) {
+    let value = e.target.value.replace(/[^A-ZА-ЯЁ\s]/gi, '');
+    e.target.value = value.toUpperCase();
+    validateHolder();
+  });
+
+  function validateHolder() {
+    const holder = cardHolderInput.value.trim();
+    
+    if (holder.length === 0) {
+      cardHolderInput.classList.remove('is-invalid', 'is-valid');
+      return false;
+    }
+    
+    const isValid = holder.length >= 3 && /^[A-ZА-ЯЁ\s]+$/.test(holder);
+    cardHolderInput.classList.remove('is-invalid', 'is-valid');
+    cardHolderInput.classList.add(isValid ? 'is-valid' : 'is-invalid');
+    
+    setTimeout(checkFormValidity, 0);
+    return isValid;
+  }
+
+  // Проверка всей формы (без вызова валидации, чтобы избежать рекурсии)
+  function checkFormValidity() {
+    const cardNumber = cardNumberInput.value.replace(/\s/g, '');
+    const expiry = cardExpiryInput.value;
+    const cvv = cardCvvInput.value;
+    const holder = cardHolderInput.value.trim();
+    
+  // Проверяем каждое поле напрямую (для номера карты — только длина и цифры)
+  const isCardValid = cardNumber.length >= 13 && cardNumber.length <= 19 && /^\d+$/.test(cardNumber);
+    const expiryMatch = expiry.match(/^(0[1-9]|1[0-2])\/([0-9]{2})$/);
+    let isExpiryValid = false;
+    if (expiryMatch) {
+      const month = parseInt(expiryMatch[1]);
+      const year = parseInt('20' + expiryMatch[2]);
+      const currentDate = new Date();
+      currentDate.setHours(0, 0, 0, 0);
+      const expiryDate = new Date(year, month, 0);
+      expiryDate.setHours(23, 59, 59, 999);
+      isExpiryValid = expiryDate >= currentDate && month >= 1 && month <= 12;
+    }
+    const isCvvValid = /^\d{3,4}$/.test(cvv);
+    const isHolderValid = holder.length >= 3 && /^[A-ZА-ЯЁ\s]+$/.test(holder);
+    
+    const submitBtn = document.getElementById('cardSubmitBtn');
+    if (isCardValid && isExpiryValid && isCvvValid && isHolderValid) {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('disabled');
+      submitBtn.style.opacity = '1';
+      submitBtn.style.cursor = 'pointer';
+    } else {
+      submitBtn.disabled = true;
+      submitBtn.classList.add('disabled');
+      submitBtn.style.opacity = '0.6';
+      submitBtn.style.cursor = 'not-allowed';
+    }
+  }
+
+  // Предотвращение отправки формы если невалидна
+  document.getElementById('cardPaymentForm').addEventListener('submit', function(e) {
+    if (!validateCard() || !validateExpiry() || !validateCvv() || !validateHolder()) {
+      e.preventDefault();
+      alert('Пожалуйста, заполните все поля корректно');
+      return false;
+    }
+  });
+
+  // Инициализация валидации
+  (function init() {
+    // Добавляем обработчики для пересчета при изменении полей
+    cardNumberInput.addEventListener('blur', checkFormValidity);
+    cardExpiryInput.addEventListener('blur', checkFormValidity);
+    cardCvvInput.addEventListener('blur', checkFormValidity);
+    cardHolderInput.addEventListener('blur', checkFormValidity);
+    
+    // Первоначальная проверка
+    setTimeout(checkFormValidity, 100);
+  })();
+</script>
+
+<style>
+  .payment-block {
+    animation: fadeIn 0.3s ease-in;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  #cardNumber, #cardExpiry, #cardCvv {
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,111 @@
+version: '3.8'
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: animal_shelter_db
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong@Passw0rd
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - db_data:/var/opt/mssql
+      - ./init_db.sql:/app/init_db.sql
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+    networks:
+      - shelter_network
+
+  db_init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: animal_shelter_db_init
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong@Passw0rd
+    volumes:
+      - ./init_db.sql:/app/init_db.sql
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        echo "Ожидание запуска SQL Server..."
+        sleep 30
+        for i in {1..30}; do
+          /opt/mssql-tools/bin/sqlcmd -S db -U sa -P YourStrong@Passw0rd -Q "SELECT 1" && break || sleep 2
+        done
+        echo "Инициализация базы данных..."
+        /opt/mssql-tools/bin/sqlcmd -S db -U sa -P YourStrong@Passw0rd -i /app/init_db.sql
+        echo "База данных инициализирована!"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - shelter_network
+    restart: "no"
+
+  api:
+    build: .
+    container_name: animal_shelter_api
+    command: python manage.py runserver 0.0.0.0:8000
+    environment:
+      - DJANGO_SETTINGS_MODULE=shelter_project.settings
+      - DB_HOST=db
+      - DB_NAME=AnimalShelterDB
+      - DB_USER=sa
+      - DB_PASSWORD=YourStrong@Passw0rd
+      - DB_PORT=1433
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      db_init:
+        condition: service_completed_successfully
+    networks:
+      - shelter_network
+    restart: unless-stopped
+
+  web:
+    build: .
+    container_name: animal_shelter_web
+    command: python manage.py runserver 0.0.0.0:8001
+    environment:
+      - DJANGO_SETTINGS_MODULE=shelter_project.settings
+      - DB_HOST=db
+      - DB_NAME=AnimalShelterDB
+      - DB_USER=sa
+      - DB_PASSWORD=YourStrong@Passw0rd
+      - DB_PORT=1433
+    ports:
+      - "8001:8001"
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      db_init:
+        condition: service_completed_successfully
+    networks:
+      - shelter_network
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  static_volume:
+  media_volume:
+
+networks:
+  shelter_network:
+    driver: bridge
+

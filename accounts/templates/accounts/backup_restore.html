@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block title %}Восстановление из бэкапа — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Восстановление из бэкапа</h2>
+    <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Назад в профиль
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm" style="border-radius:16px;">
+        <div class="card-body p-4">
+          <div class="alert alert-warning" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <strong>Внимание!</strong> Восстановление данных удалит все текущие данные и заменит их данными из бэкапа.
+            Убедитесь, что у вас есть актуальный бэкап перед выполнением этой операции.
+          </div>
+
+          <form method="post" enctype="multipart/form-data" class="mt-4" id="backupRestoreForm">
+            {% csrf_token %}
+            <div class="mb-4">
+              <label for="backup_file" class="form-label fw-semibold">
+                <i class="bi bi-file-earmark-code me-2"></i>Выберите файл бэкапа (.json)
+              </label>
+              <input type="file" class="form-control form-control-lg" id="backup_file" name="backup_file" 
+                     accept=".json,application/json" required>
+              <div class="form-text">Поддерживаются только файлы в формате JSON</div>
+            </div>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+              <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle me-2"></i>Отмена
+              </a>
+              <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmRestoreModal">
+                <i class="bi bi-upload me-2"></i>Восстановить данные
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card mt-4" style="background:#FFF7EF; border-radius:16px;">
+        <div class="card-body p-4">
+          <h5 class="card-title mb-3">
+            <i class="bi bi-info-circle me-2"></i>Информация о восстановлении
+          </h5>
+          <ul class="list-unstyled mb-0">
+            <li class="mb-2">
+              <i class="bi bi-check-circle text-success me-2"></i>
+              Будут восстановлены: пользователи, животные, новости и все справочники
+            </li>
+            <li class="mb-2">
+              <i class="bi bi-check-circle text-success me-2"></i>
+              Данные восстановятся в том же виде, в котором были на момент создания бэкапа
+            </li>
+            <li class="mb-2">
+              <i class="bi bi-exclamation-circle text-warning me-2"></i>
+              Операция необратима. Рекомендуется создать новый бэкап перед восстановлением
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="confirmRestoreModal" class="modal fade" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg" style="border-radius:20px; overflow:hidden; border:none;">
+      <div class="modal-header border-0 text-center d-block" style="background:linear-gradient(135deg, #FFF7EF 0%, #FFE8D6 100%); padding:2rem 1.5rem 1rem;">
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="mb-3">
+          <div style="width:80px; height:80px; margin:0 auto; background:linear-gradient(135deg, #dc3545 0%, #c82333 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(220,53,69,0.3);">
+            <i class="bi bi-exclamation-triangle-fill text-white" style="font-size: 42px;"></i>
+          </div>
+        </div>
+        <h4 class="modal-title fw-bold mb-2" style="color:#2b1d16;">Подтверждение восстановления</h4>
+      </div>
+      <div class="modal-body text-center py-4 px-4">
+        <p class="lead mb-3" style="color:#2b1d16; font-size:1.1rem;">
+          Вы уверены, что хотите восстановить данные из бэкапа?
+        </p>
+        <div class="bg-light rounded p-3 mb-3" style="border-left:4px solid #dc3545;">
+          <p class="text-muted mb-0 small">
+            <i class="bi bi-info-circle text-danger"></i>
+            Все текущие данные будут удалены и заменены данными из выбранного файла.
+          </p>
+        </div>
+      </div>
+      <div class="modal-footer border-0 justify-content-center pb-4">
+        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-danger px-4 fw-semibold" id="confirmRestoreBtn" style="border-radius:10px; box-shadow:0 4px 12px rgba(220,53,69,0.3);">
+          Да, восстановить
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const confirmBtn = document.getElementById('confirmRestoreBtn');
+    const form = document.getElementById('backupRestoreForm');
+    if (!confirmBtn || !form) return;
+    confirmBtn.addEventListener('click', function () {
+      form.submit();
+    });
+  })();
+</script>
+{% endblock %}
+

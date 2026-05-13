@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}{{ vaccination.type_name }} — {{ vaccination.animal_name }} — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="mb-4">
+    <a href="{% url 'vaccinations_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Назад к списку
+    </a>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card shadow-sm mb-4" style="border-radius:16px;">
+        <div class="card-header bg-white">
+          <h4 class="mb-0">Информация о вакцинации</h4>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <strong>Животное:</strong>
+            <a href="{% url 'animal_card_detail' vaccination.animal_id %}" class="text-decoration-none">
+              {{ vaccination.animal_name }}
+            </a>
+          </div>
+          <div class="mb-3">
+            <strong>Тип вакцинации:</strong> {{ vaccination.type_name }}
+          </div>
+          {% if vaccination.description %}
+          <div class="mb-3">
+            <strong>Описание:</strong> {{ vaccination.description }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card shadow-sm" style="border-radius:16px;">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">История вакцинаций ({{ records|length }})</h5>
+          <a href="{% url 'vaccination_add_record' vaccination.id %}" class="btn btn-sm btn-warning">
+            <i class="bi bi-plus-circle"></i> Добавить дату
+          </a>
+        </div>
+        <div class="card-body">
+          {% if records %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Дата вакцинации</th>
+                  <th style="width:100px;">Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in records %}
+                <tr>
+                  <td>
+                    <strong>{{ r.date|date:"d.m.Y" }}</strong>
+                    {% if forloop.first %}
+                    <span class="badge bg-success ms-2">Последняя</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <form method="post" action="{% url 'vaccination_record_delete' r.id %}" class="d-inline js-confirm-submit"
+                          data-confirm="Удалить запись о вакцинации?"
+                          data-confirm-ok="Удалить">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted mb-0">Записи о вакцинациях отсутствуют. <a href="{% url 'vaccination_add_record' vaccination.id %}">Добавить первую запись</a></p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+

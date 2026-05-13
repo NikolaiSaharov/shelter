@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load tz %}
+{% block title %}{{ news.title }} — Новости{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-xl-10">
+      <!-- Хлебные крошки -->
+      <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="/">Главная</a></li>
+          <li class="breadcrumb-item"><a href="/news/">Новости</a></li>
+          <li class="breadcrumb-item active" aria-current="page">{{ news.title|truncatewords:5 }}</li>
+        </ol>
+      </nav>
+
+      <!-- Карточка новости -->
+      <div class="card shadow-lg border-0 overflow-hidden" style="border-radius: 20px;">
+        {% if news.image_path %}
+          <div class="position-relative" style="height: 450px; overflow: hidden;">
+            <img src="{{ news.image_path }}" class="w-100 h-100" style="object-fit: cover;" alt="{{ news.title }}">
+            <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.1));"></div>
+          </div>
+        {% endif %}
+        
+        <div class="card-body p-4 p-md-5">
+          <!-- Заголовок и метаинформация -->
+          <div class="mb-4">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <div class="d-flex align-items-center text-muted small">
+                <i class="bi bi-calendar-event me-2"></i>
+                <span>{{ news.post_date|date:'d.m.Y' }}</span>
+              </div>
+              <div class="d-flex align-items-center text-muted small">
+                <i class="bi bi-clock me-2"></i>
+                <span>{{ news.post_date|localtime|date:'H:i' }}</span>
+              </div>
+              {% if auth_user.role == 'Admin' or auth_user.role == 'Manager' %}
+              <div class="ms-auto d-flex gap-2">
+                <a class="btn btn-sm btn-outline-secondary" href="/news/admin/{{ news.news_id }}/update/">
+                  <i class="bi bi-pencil"></i> Редактировать
+                </a>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="showDeleteModal('{{ news.title|escapejs }}')">
+                  <i class="bi bi-trash"></i> Удалить
+                </button>
+              </div>
+              {% endif %}
+            </div>
+            <h1 class="display-4 fw-bold mb-0" style="color:#2b1d16; line-height: 1.2;">{{ news.title }}</h1>
+          </div>
+
+          <hr class="my-4" style="opacity: 0.2;">
+
+          <!-- Содержимое новости -->
+          <article class="news-content" style="font-size:1.125rem; line-height:1.8; color:#333;">
+            <div class="content">{{ news.content|safe }}</div>
+          </article>
+          
+          <!-- Кнопка перехода к животному, если новость о новом питомце -->
+          {% if related_animal %}
+          <div class="mt-4 pt-4 border-top">
+            <a href="/animals/{{ related_animal.animal_id }}/" class="btn btn-primary px-4 py-2 d-inline-flex align-items-center gap-2 fw-semibold" style="border-radius: 12px; box-shadow: 0 2px 8px rgba(13, 110, 253, 0.2); transition: all 0.3s ease;">
+              <i class="bi bi-heart"></i> Посмотреть питомца "{{ related_animal.animal_name }}"
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Навигация -->
+      <div class="d-flex justify-content-between align-items-center mt-4 mb-5">
+        <a class="btn btn-warning px-4 py-2 d-inline-flex align-items-center gap-2 fw-semibold" href="/news/" style="border-radius: 12px; box-shadow: 0 2px 8px rgba(240, 138, 36, 0.2); transition: all 0.3s ease;">
+          <i class="bi bi-arrow-left"></i> К списку новостей
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Кнопка прокрутки наверх -->
+<button id="scrollToTop" class="btn btn-warning rounded-circle position-fixed bottom-0 end-0 m-4" style="width: 56px; height: 56px; display: none; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" onclick="scrollToTop()" title="Наверх">
+  <i class="bi bi-arrow-up" style="font-size: 1.5rem;"></i>
+</button>
+
+<style>
+  .news-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    margin: 1.5rem 0;
+  }
+  .news-content p {
+    margin-bottom: 1.25rem;
+  }
+  .news-content h2, .news-content h3 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    color: #2b1d16;
+    font-weight: 600;
+  }
+  .news-content ul, .news-content ol {
+    margin-bottom: 1.25rem;
+    padding-left: 1.5rem;
+  }
+  .news-content li {
+    margin-bottom: 0.5rem;
+  }
+  #scrollToTop {
+    transition: all 0.3s ease;
+  }
+  #scrollToTop:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.2) !important;
+  }
+  .btn-warning:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(240, 138, 36, 0.3) !important;
+  }
+</style>
+
+<script>
+  // Показываем кнопку прокрутки при прокрутке вниз
+  window.addEventListener('scroll', function() {
+    const scrollBtn = document.getElementById('scrollToTop');
+    if (window.pageYOffset > 300) {
+      scrollBtn.style.display = 'block';
+    } else {
+      scrollBtn.style.display = 'none';
+    }
+  });
+
+  // Прокрутка наверх
+  function scrollToTop() {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  }
+  
+  function showDeleteModal(newsTitle){
+    document.getElementById('deleteNewsTitle').textContent = '«' + newsTitle + '»';
+    const modal = new bootstrap.Modal(document.getElementById('deleteNewsModal'));
+    modal.show();
+  }
+</script>
+
+<!-- Модальное окно удаления новости -->
+<div class="modal fade" id="deleteNewsModal" tabindex="-1" aria-labelledby="deleteNewsModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteNewsModalLabel">Подтверждение удаления</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Вы уверены, что хотите удалить новость <strong id="deleteNewsTitle"></strong>?</p>
+        <p class="text-muted small mb-0">Это действие нельзя отменить.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <form method="post" action="/news/admin/{{ news.news_id }}/delete/" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">Удалить</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

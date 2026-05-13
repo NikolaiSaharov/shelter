@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load role_extras %}
+{% load tz %}
+{% block title %}Редактировать пользователя — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Редактировать пользователя: {{ user.email }}</h2>
+    <a href="{% url 'user_admin_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Назад к списку
+    </a>
+  </div>
+
+  <div class="card shadow-sm" style="border-radius:16px;">
+    <div class="card-body p-4">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" name="email" value="{{ user.email }}" required>
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Пароль</label>
+            <input type="password" class="form-control" name="password" minlength="6">
+            <div class="form-text">Оставьте пустым, чтобы не менять пароль. Минимум 6 символов.</div>
+          </div>
+          
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Имя <span class="text-danger">*</span></label>
+            <input type="text" class="form-control {% if error_first_name %}is-invalid{% endif %}" name="first_name" value="{{ first_name|default:user.first_name }}" required pattern="[^\d]*">
+            {% if error_first_name %}
+              <div class="invalid-feedback">{{ error_first_name }}</div>
+            {% else %}
+              <div class="form-text">Имя не должно содержать цифры</div>
+            {% endif %}
+          </div>
+          
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Фамилия <span class="text-danger">*</span></label>
+            <input type="text" class="form-control {% if error_last_name %}is-invalid{% endif %}" name="last_name" value="{{ last_name|default:user.last_name }}" required pattern="[^\d]*">
+            {% if error_last_name %}
+              <div class="invalid-feedback">{{ error_last_name }}</div>
+            {% else %}
+              <div class="form-text">Фамилия не должна содержать цифры</div>
+            {% endif %}
+          </div>
+          
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Отчество</label>
+            <input type="text" class="form-control {% if error_middle_name %}is-invalid{% endif %}" name="middle_name" value="{{ middle_name|default:user.middle_name|default:'' }}" pattern="[^\d]*">
+            {% if error_middle_name %}
+              <div class="invalid-feedback">{{ error_middle_name }}</div>
+            {% endif %}
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Телефон <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="phone" value="{{ user.phone }}" required>
+            <div class="form-text">Будет автоматически нормализован</div>
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Роль <span class="text-danger">*</span></label>
+            <select name="role_id" id="roleSelect" class="form-select" required>
+              {% for role in roles %}
+                <option value="{{ role.role_id }}" {% if user.role.role_id == role.role_id %}selected{% endif %}>
+                  {{ role.role_name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Приют (для менеджера)</label>
+            <select name="shelter_id" id="shelterSelect" class="form-select {% if error_shelter_id %}is-invalid{% endif %}">
+              <option value="">— Не привязан —</option>
+              {% for sh in shelters %}
+                <option value="{{ sh.shelter_id }}"
+                        {% if shelter_id %}
+                          {% if shelter_id == sh.shelter_id|stringformat:"s" %}selected{% endif %}
+                        {% else %}
+                          {% if user.shelter_id == sh.shelter_id %}selected{% endif %}
+                        {% endif %}>
+                  {{ sh.shelter_name }}
+                </option>
+              {% endfor %}
+            </select>
+            {% if error_shelter_id %}
+              <div class="invalid-feedback">{{ error_shelter_id }}</div>
+            {% endif %}
+            <div class="form-text">Актуально только если роль = Manager</div>
+          </div>
+        </div>
+
+        <div class="mb-3 mt-3">
+          <div class="text-muted small">
+            <strong>Дата регистрации:</strong> {{ user.registration_date|localtime|date:'d.m.Y H:i' }}
+          </div>
+        </div>
+
+        <hr>
+        <div class="d-flex justify-content-between align-items-center">
+          {% if user.user_id != auth_user.id %}
+            <form method="post" action="{% url 'user_admin_delete' user.user_id %}" class="js-confirm-submit"
+                  data-confirm="Вы уверены, что хотите удалить пользователя «{{ user.email }}»?">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-danger">
+                <i class="bi bi-trash"></i> Удалить пользователя
+              </button>
+            </form>
+          {% else %}
+            <div></div>
+          {% endif %}
+          <div class="d-flex gap-2">
+            <a href="{% url 'user_admin_list' %}" class="btn btn-outline-secondary">Отмена</a>
+            <button class="btn btn-primary" type="submit">
+              <i class="bi bi-check-circle"></i> Сохранить изменения
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+<script>
+  (function () {
+    const roleSelect = document.getElementById('roleSelect');
+    const shelterSelect = document.getElementById('shelterSelect');
+    if (!roleSelect || !shelterSelect) return;
+
+    function toggleShelterRequired() {
+      const isManager = roleSelect.options[roleSelect.selectedIndex]?.text?.trim() === 'Manager';
+      shelterSelect.required = !!isManager;
+      if (!isManager) {
+        shelterSelect.classList.remove('is-invalid');
+      }
+    }
+
+    roleSelect.addEventListener('change', toggleShelterRequired);
+    toggleShelterRequired();
+  })();
+</script>
+

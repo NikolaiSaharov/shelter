@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Регистрация — Анималити{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-center py-5">
+  <div class="card p-4" style="max-width:700px; width:100%; border-radius:16px;">
+    <h3 class="text-center fw-bold mb-4">Регистрация в Анималити <span class="text-warning">🐾</span></h3>
+
+    {% if messages %}
+      {% for m in messages %}
+        {% if 'register_page' in m.extra_tags %}
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+              if (typeof showErrorModal === 'function') {
+                showErrorModal('{{ m|escapejs }}');
+              }
+            });
+          </script>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Имя *</label>
+          <input type="text" name="first_name" class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" value="{{ form.first_name.value|default:'' }}" required>
+          {% if form.first_name.errors %}
+            <div class="invalid-feedback">{{ form.first_name.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Фамилия *</label>
+          <input type="text" name="last_name" class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" value="{{ form.last_name.value|default:'' }}" required>
+          {% if form.last_name.errors %}
+            <div class="invalid-feedback">{{ form.last_name.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-12">
+          <label class="form-label">Отчество</label>
+          <input type="text" name="middle_name" class="form-control {% if form.middle_name.errors %}is-invalid{% endif %}" value="{{ form.middle_name.value|default:'' }}">
+          {% if form.middle_name.errors %}
+            <div class="invalid-feedback">{{ form.middle_name.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-12">
+          <label class="form-label">Телефон *</label>
+          <input type="text" name="phone" class="form-control {% if form.phone.errors %}is-invalid{% endif %}" placeholder="+7 (XXX) XXX-XX-XX" value="{{ form.phone.value|default:'' }}" required>
+          {% if form.phone.errors %}
+            <div class="invalid-feedback">{{ form.phone.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-12">
+          <label class="form-label">Почта *</label>
+          <input type="email" name="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}" placeholder="Введите email" value="{{ form.email.value|default:'' }}" required>
+          {% if form.email.errors %}
+            <div class="invalid-feedback">{{ form.email.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-12">
+          <label class="form-label">Пароль *</label>
+          <input type="password" name="password" class="form-control {% if form.password.errors %}is-invalid{% endif %}" required>
+          {% if form.password.errors %}
+            <div class="invalid-feedback">{{ form.password.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="col-12 mt-2">
+          <div class="form-check small">
+            <input 
+              class="form-check-input {% if form.agree_personal_data.errors %}is-invalid{% endif %}" 
+              type="checkbox" 
+              name="agree_personal_data" 
+              id="agree_personal_data"
+              {% if form.agree_personal_data.value %}checked{% endif %}
+              required
+            >
+            <label class="form-check-label" for="agree_personal_data">
+              Я соглашаюсь на обработку моих персональных данных и принимаю 
+              <a href="{% url 'data_policy' %}" class="link-primary" style="text-decoration: underline;">Политику обработки персональных данных</a>.
+            </label>
+            {% if form.agree_personal_data.errors %}
+              <div class="invalid-feedback d-block">{{ form.agree_personal_data.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-warning w-100 mt-3" type="submit">Зарегистрироваться</button>
+    </form>
+
+    <div class="text-center mt-3">
+      Уже есть аккаунт? <a href="/accounts/login/">Войти</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

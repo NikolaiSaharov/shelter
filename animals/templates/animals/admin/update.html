@@ -1,0 +1,563 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Редактировать животное — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Редактировать животное: {{ animal.animal_name }}</h2>
+    <a href="{% url 'animal_admin_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Назад к списку
+    </a>
+  </div>
+
+  <div class="card shadow-sm" style="border-radius:16px;">
+    <div class="card-body p-4">
+      {% if messages %}
+        {% for m in messages %}
+          {% if 'animal_update_page' in m.extra_tags %}
+            <script>
+              document.addEventListener('DOMContentLoaded', function() {
+                if (typeof showErrorModal === 'function') {
+                  showErrorModal('{{ m|escapejs }}');
+                }
+              });
+            </script>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+      
+      <form method="post" id="animalForm" enctype="multipart/form-data" onsubmit="return normalizeDecimalFieldsAndCheckDeletions(event)">
+        {% csrf_token %}
+        
+        <div class="row g-4">
+          <!-- Основная информация -->
+          <div class="col-12">
+            <h5 class="fw-bold mb-3" style="color:#2b1d16;">Основная информация</h5>
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Имя животного <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="animal_name" value="{{ animal.animal_name }}" required pattern="[^\d]*">
+            <div class="form-text">Имя не должно содержать цифры</div>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Возраст (лет) <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" name="age" value="{{ animal.age }}" min="0" required>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Пол <span class="text-danger">*</span></label>
+            <select class="form-select" name="gender" required>
+              <option value="Male" {% if animal.gender == 'Male' %}selected{% endif %}>Мужской</option>
+              <option value="Female" {% if animal.gender == 'Female' %}selected{% endif %}>Женский</option>
+              <option value="Unknown" {% if animal.gender == 'Unknown' %}selected{% endif %}>Неизвестно</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Тип животного</label>
+            <select class="form-select" id="type_select" onchange="filterBreeds()">
+              <option value="">Выберите тип</option>
+              {% for type in types %}
+                <option value="{{ type.type_id }}" {% if animal.breed.type.type_id == type.type_id %}selected{% endif %}>
+                  {{ type.type_name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Порода <span class="text-danger">*</span></label>
+            <select class="form-select" name="breed_id" id="breed_select" required>
+              {% for breed in breeds %}
+                <option value="{{ breed.breed_id }}" data-type="{{ breed.type.type_id }}" 
+                        {% if animal.breed_id == breed.breed_id %}selected{% endif %}>
+                  {{ breed.breed_name }} ({{ breed.type.type_name }})
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Статус</label>
+            <select class="form-select" name="status_id">
+              {% for status in statuses %}
+                <option value="{{ status.status_id }}" {% if animal.status_id == status.status_id %}selected{% endif %}>
+                  {{ status.status_name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Характер</label>
+            <select class="form-select" name="character_id">
+              <option value="">Не указан</option>
+              {% for character in characters %}
+                <option value="{{ character.character_id }}" {% if animal.character_id == character.character_id %}selected{% endif %}>
+                  {{ character.character_name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Приют</label>
+            <select class="form-select" name="shelter_id">
+              <option value="">Не указан</option>
+              {% for shelter in shelters %}
+                <option value="{{ shelter.shelter_id }}" {% if animal.shelter_id == shelter.shelter_id %}selected{% endif %}>
+                  {{ shelter.shelter_name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-12">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="vaccinated" id="vaccinated" 
+                     {% if animal.vaccinated %}checked{% endif %}>
+              <label class="form-check-label" for="vaccinated">
+                Привит
+              </label>
+            </div>
+          </div>
+
+          <!-- Дополнительная информация -->
+          <div class="col-12 mt-2">
+            <hr>
+            <h5 class="fw-bold mb-3" style="color:#2b1d16;">Дополнительная информация</h5>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Рост <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <input type="text" class="form-control" name="height" id="height" 
+                     value="{% if height_cm %}{{ height_cm|floatformat:2 }}{% endif %}" 
+                     placeholder="Например: 25.5 или 25,5" pattern="[0-9]+([.,][0-9]+)?" required min="0.01" step="0.01">
+              <select class="form-select" name="height_unit" id="height_unit" style="max-width: 120px;">
+                <option value="cm" selected>см</option>
+                <option value="m">м</option>
+              </select>
+            </div>
+            <div class="form-text">Можно вводить целое число или с запятой/точкой. Рост не может быть равен 0.</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Вес (кг) <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="animal_weight" id="animal_weight" 
+                   value="{% if animal.animal_weight %}{{ animal.animal_weight|floatformat:2|stringformat:'s' }}{% endif %}" 
+                   placeholder="Например: 5.2 или 5,2" pattern="[0-9]+([.,][0-9]+)?" required>
+            <div class="form-text">Можно вводить целое число или с запятой/точкой</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Дата поступления</label>
+            <input type="date" class="form-control" name="admission_date" 
+                   value="{% if animal.admission_date %}{{ animal.admission_date|date:'Y-m-d' }}{% endif %}">
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Текущие медиа-файлы</label>
+            {% if animal.media_files.all %}
+              <div class="mb-3 d-flex flex-wrap gap-2">
+                {% for media in animal.media_files.all %}
+                  {% if media.media_type == 'Photo' %}
+                    <div class="position-relative" style="width:120px; height:120px;" id="media-{{ media.media_id }}">
+                      <img src="{{ media.media_path }}" alt="Фото {{ forloop.counter }}" 
+                           style="width:100%; height:100%; object-fit:cover; border-radius:8px; border:2px solid #dee2e6;"
+                           referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='{% static 'no-photo.png' %}';">
+                      <span class="badge bg-primary position-absolute top-0 start-0 m-1">Фото</span>
+                      <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" 
+                              onclick="deleteMedia({{ media.media_id }})" 
+                              title="Удалить фото" style="padding: 2px 6px; font-size: 0.7rem; z-index: 10;">
+                        <i class="bi bi-x"></i>
+                      </button>
+                    </div>
+                  {% elif media.media_type == 'Video' %}
+                    <div class="position-relative" style="width:120px; height:120px; background:#000; border-radius:8px; display:flex; align-items:center; justify-content:center;" id="media-{{ media.media_id }}">
+                      <i class="bi bi-play-circle-fill text-white" style="font-size:3rem;"></i>
+                      <span class="badge bg-danger position-absolute top-0 start-0 m-1">Видео</span>
+                      <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" 
+                              onclick="deleteMedia({{ media.media_id }})" 
+                              title="Удалить видео" style="padding: 2px 6px; font-size: 0.7rem; z-index: 10;">
+                        <i class="bi bi-x"></i>
+                      </button>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+              <input type="hidden" name="deleted_media_ids" id="deleted_media_ids" value="">
+            {% elif animal.image_path %}
+              <div class="mb-2">
+                <label class="form-label small fw-semibold">Текущее изображение:</label>
+                <div>
+                  <img src="{{ animal.image_path }}" alt="Текущее изображение" 
+                       style="max-width:200px;max-height:200px;border-radius:8px;border:1px solid #dee2e6;">
+                </div>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Добавить фотографии</label>
+            <div class="mb-2">
+              <input type="file" class="form-control" name="photo_files" id="photo_files" accept="image/*" multiple>
+              <div class="form-text">Можно выбрать несколько фотографий</div>
+            </div>
+            <div class="mt-2">
+              <label class="form-label small fw-semibold">Или укажите URL фотографий (по одному на строку):</label>
+              <textarea class="form-control" name="photo_urls" rows="3" placeholder="https://example.com/photo1.jpg&#10;https://example.com/photo2.jpg"></textarea>
+            </div>
+            <div id="photoPreview" class="mt-2 d-flex flex-wrap gap-2"></div>
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Добавить видео (опционально)</label>
+            <div class="mb-2">
+              <input type="file" class="form-control" name="video_files" id="video_files" accept="video/*" multiple>
+              <div class="form-text">Можно выбрать несколько видео файлов</div>
+            </div>
+            <div class="mt-2">
+              <label class="form-label small fw-semibold">Или укажите URL видео (по одному на строку):</label>
+              <textarea class="form-control" name="video_urls" rows="2" placeholder="https://example.com/video1.mp4"></textarea>
+            </div>
+          </div>
+
+          <!-- Старое поле для обратной совместимости -->
+          <div class="col-md-12" style="display:none;">
+            <input type="file" class="form-control" name="image_file" id="image_file" accept="image/*">
+            <input type="text" class="form-control" name="image_path" value="{{ animal.image_path|default:'' }}">
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Описание</label>
+            <textarea class="form-control" name="description" rows="4">{{ animal.description|default:'' }}</textarea>
+          </div>
+
+          <!-- Кнопки -->
+          <div class="col-12">
+            <hr>
+            <div class="d-flex justify-content-end gap-2">
+              <a href="{% url 'animal_admin_list' %}" class="btn btn-outline-secondary">Отмена</a>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle"></i> Сохранить изменения
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно подтверждения удаления медиа-файла -->
+<div id="deleteMediaModal" class="modal fade" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg" style="border-radius:20px; overflow:hidden; border:none;">
+      <div class="modal-header border-0 text-center d-block" style="background:linear-gradient(135deg, #FFF7EF 0%, #FFE8D6 100%); padding:2rem 1.5rem 1rem;">
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="mb-3">
+          <div style="width:80px; height:80px; margin:0 auto; background:linear-gradient(135deg, #dc3545 0%, #c82333 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(220, 53, 69, 0.3);">
+            <i class="bi bi-trash-fill text-white" style="font-size: 42px;"></i>
+          </div>
+        </div>
+        <h4 class="modal-title fw-bold mb-2" style="color:#2b1d16;">Удаление медиа-файла</h4>
+      </div>
+      <div class="modal-body text-center py-4 px-4">
+        <p class="lead mb-3" style="color:#2b1d16; font-size:1.1rem;">
+          Вы уверены, что хотите удалить этот медиа-файл?
+        </p>
+        <p class="text-muted small mb-0">
+          Это действие нельзя отменить
+        </p>
+      </div>
+      <div class="modal-footer border-0 justify-content-center pb-4 pt-2">
+        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" style="border-radius:12px;">
+          <i class="bi bi-x-circle me-2"></i>Отмена
+        </button>
+        <button type="button" class="btn btn-danger px-4" id="confirmDeleteMediaBtn" style="border-radius:12px; box-shadow:0 2px 8px rgba(220, 53, 69, 0.2);">
+          <i class="bi bi-trash-fill me-2"></i>Удалить
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function filterBreeds() {
+  const typeSelect = document.getElementById('type_select');
+  const breedSelect = document.getElementById('breed_select');
+  const selectedType = typeSelect.value;
+  
+  // Показываем/скрываем породы в зависимости от выбранного типа
+  for (let option of breedSelect.options) {
+    if (option.value === '') {
+      continue;
+    }
+    const breedType = option.getAttribute('data-type');
+    if (!selectedType || breedType === selectedType) {
+      option.style.display = '';
+    } else {
+      option.style.display = 'none';
+    }
+  }
+  
+  // Если тип не выбран, показываем все породы
+  if (!selectedType) {
+    for (let option of breedSelect.options) {
+      option.style.display = '';
+    }
+  }
+}
+
+// При загрузке страницы фильтруем породы по текущему типу
+document.addEventListener('DOMContentLoaded', function() {
+  filterBreeds();
+});
+
+// Замена запятой на точку перед отправкой формы и проверка роста
+function normalizeDecimalFields(event) {
+  const heightField = document.getElementById('height');
+  const heightUnitField = document.getElementById('height_unit');
+  const weightField = document.getElementById('animal_weight');
+  
+  if (heightField && heightField.value) {
+    const oldValue = heightField.value;
+    heightField.value = heightField.value.replace(',', '.');
+    console.log('Height normalized:', oldValue, '->', heightField.value);
+    
+    // Проверка, что рост не равен 0
+    const heightValue = parseFloat(heightField.value);
+    if (isNaN(heightValue) || heightValue <= 0) {
+      event.preventDefault();
+      alert('Рост должен быть больше 0');
+      heightField.focus();
+      return false;
+    }
+  }
+  
+  if (weightField && weightField.value) {
+    const oldValue = weightField.value;
+    weightField.value = weightField.value.replace(',', '.');
+    console.log('Weight normalized:', oldValue, '->', weightField.value);
+  }
+  
+  console.log('Form submitting with values:', {
+    height: heightField ? heightField.value : 'N/A',
+    height_unit: heightUnitField ? heightUnitField.value : 'N/A',
+    weight: weightField ? weightField.value : 'N/A'
+  });
+  
+  return true; // Разрешаем отправку формы
+}
+
+// Разрешаем ввод только цифр, точки и запятой
+document.addEventListener('DOMContentLoaded', function() {
+  const heightField = document.getElementById('height');
+  const weightField = document.getElementById('animal_weight');
+  
+  function validateDecimalInput(e) {
+    const char = e.key;
+    // Разрешаем: цифры, точка, запятая, Backspace, Delete, Tab, стрелки
+    if (!/[\d.,]/.test(char) && !['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(char)) {
+      e.preventDefault();
+      return false;
+    }
+    // Разрешаем только одну точку или запятую
+    if ((char === '.' || char === ',') && e.target.value.match(/[.,]/)) {
+      e.preventDefault();
+      return false;
+    }
+  }
+  
+  if (heightField) {
+    heightField.addEventListener('keydown', validateDecimalInput);
+  }
+  if (weightField) {
+    weightField.addEventListener('keydown', validateDecimalInput);
+  }
+  
+  // Превью загружаемых фотографий
+  const photoFilesInput = document.getElementById('photo_files');
+  const photoPreview = document.getElementById('photoPreview');
+  
+  if (photoFilesInput) {
+    photoFilesInput.addEventListener('change', function(e) {
+      photoPreview.innerHTML = '';
+      const files = Array.from(e.target.files);
+      files.forEach((file, index) => {
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.style.width = '120px';
+            img.style.height = '120px';
+            img.style.objectFit = 'cover';
+            img.style.borderRadius = '8px';
+            img.style.border = '2px solid #dee2e6';
+            img.className = 'mb-2';
+            photoPreview.appendChild(img);
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    });
+  }
+  
+  // Превью загружаемого изображения (старое поле для обратной совместимости)
+  const imageFileInput = document.getElementById('image_file');
+  const imagePreview = document.getElementById('imagePreview');
+  const previewImg = document.getElementById('previewImg');
+  
+  if (imageFileInput) {
+    imageFileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          if (previewImg) {
+            previewImg.src = e.target.result;
+            imagePreview.style.display = 'block';
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        if (imagePreview) {
+          imagePreview.style.display = 'none';
+        }
+      }
+    });
+  }
+});
+
+// Переменная для хранения ID медиа-файла, который нужно удалить
+let currentMediaIdToDelete = null;
+
+// Функция для удаления медиа-файла (должна быть глобальной для onclick)
+function deleteMedia(mediaId) {
+  console.log('=== deleteMedia вызвана с ID:', mediaId, '===');
+  
+  // Сохраняем ID для использования в модальном окне
+  currentMediaIdToDelete = mediaId;
+  
+  // Показываем модальное окно
+  const deleteModal = new bootstrap.Modal(document.getElementById('deleteMediaModal'));
+  deleteModal.show();
+}
+
+// Функция для подтверждения удаления (вызывается из модального окна)
+function confirmDeleteMedia() {
+  if (!currentMediaIdToDelete) {
+    console.error('✗ ID медиа-файла не установлен!');
+    return;
+  }
+  
+  const mediaId = currentMediaIdToDelete;
+  
+  // Скрываем элемент визуально
+  const mediaElement = document.getElementById('media-' + mediaId);
+  if (mediaElement) {
+    mediaElement.style.opacity = '0.3';
+    mediaElement.style.pointerEvents = 'none';
+    mediaElement.style.border = '3px solid red';
+    console.log('✓ Элемент скрыт визуально');
+  } else {
+    console.error('✗ Элемент media-' + mediaId + ' не найден!');
+    // Закрываем модальное окно
+    const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteMediaModal'));
+    if (deleteModal) {
+      deleteModal.hide();
+    }
+    return;
+  }
+  
+  // Добавляем ID в скрытое поле для удаления
+  const deletedField = document.getElementById('deleted_media_ids');
+  if (!deletedField) {
+    console.error('✗ Поле deleted_media_ids не найдено!');
+    alert('Ошибка: поле для удаления не найдено. Обновите страницу и попробуйте снова.');
+    // Закрываем модальное окно
+    const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteMediaModal'));
+    if (deleteModal) {
+      deleteModal.hide();
+    }
+    return;
+  }
+  
+  const form = deletedField.closest('form');
+  if (!form) {
+    console.error('✗ Поле не находится внутри формы!');
+    alert('Ошибка: поле не находится внутри формы. Обновите страницу и попробуйте снова.');
+    // Закрываем модальное окно
+    const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteMediaModal'));
+    if (deleteModal) {
+      deleteModal.hide();
+    }
+    return;
+  }
+  
+  console.log('✓ Поле найдено, находится в форме:', form.id);
+  
+  const currentIds = deletedField.value ? deletedField.value.split(',').filter(id => id.trim()) : [];
+  const mediaIdStr = mediaId.toString();
+  
+  if (!currentIds.includes(mediaIdStr)) {
+    currentIds.push(mediaIdStr);
+    deletedField.value = currentIds.join(',');
+    console.log('✓ Медиа-файл помечен для удаления:', mediaId);
+    console.log('✓ Текущий список для удаления:', deletedField.value);
+    console.log('✓ Значение поля перед отправкой будет:', deletedField.value);
+  } else {
+    console.log('⚠ Медиа-файл уже в списке для удаления');
+  }
+  
+  // Закрываем модальное окно
+  const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteMediaModal'));
+  if (deleteModal) {
+    deleteModal.hide();
+  }
+  
+  // Очищаем переменную
+  currentMediaIdToDelete = null;
+}
+
+// Функция для проверки удалений перед отправкой формы
+function normalizeDecimalFieldsAndCheckDeletions(event) {
+  // Вызываем оригинальную функцию нормализации
+  if (typeof normalizeDecimalFields === 'function') {
+    normalizeDecimalFields(event);
+  }
+  
+  // Проверяем удаления
+  const deletedField = document.getElementById('deleted_media_ids');
+  if (deletedField && deletedField.value) {
+    console.log('=== Отправка формы ===');
+    console.log('Медиа-файлы для удаления:', deletedField.value);
+  }
+  
+  return true; // Разрешаем отправку формы
+}
+
+// Инициализация обработчиков для модального окна удаления
+document.addEventListener('DOMContentLoaded', function() {
+  const confirmDeleteBtn = document.getElementById('confirmDeleteMediaBtn');
+  if (confirmDeleteBtn) {
+    confirmDeleteBtn.addEventListener('click', function() {
+      confirmDeleteMedia();
+    });
+  }
+  
+  // Очищаем переменную при закрытии модального окна
+  const deleteModal = document.getElementById('deleteMediaModal');
+  if (deleteModal) {
+    deleteModal.addEventListener('hidden.bs.modal', function() {
+      currentMediaIdToDelete = null;
+    });
+  }
+});
+</script>
+{% endblock %}
+

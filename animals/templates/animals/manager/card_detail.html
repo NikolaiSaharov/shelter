@@ -1,0 +1,365 @@
+{% extends 'base.html' %}
+{% block title %}{{ animal.name }} — Картотека — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="mb-4">
+    <a href="{% url 'animal_card_catalog' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Назад к картотеке
+    </a>
+  </div>
+
+  <div class="row">
+    <!-- Левая колонка: Фото и основная информация -->
+    <div class="col-lg-4 mb-4">
+      <div class="card shadow-sm" style="border-radius:16px; overflow:hidden;">
+        {% if animal.image_path %}
+          <img src="{{ animal.image_path }}" class="card-img-top" alt="{{ animal.name }}" style="height:400px; object-fit:fill;">
+        {% else %}
+          <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height:400px;">
+            <i class="bi bi-image" style="font-size:5rem; color:#ccc;"></i>
+          </div>
+        {% endif %}
+        <div class="card-body">
+          <h3 class="card-title mb-3">{{ animal.name }}</h3>
+          
+          <div class="mb-3">
+            <span class="badge fs-6 {% if animal.status == 'Available' %}bg-success{% elif animal.status == 'Adopted' %}bg-primary{% else %}bg-secondary{% endif %}">
+              {{ animal.status }}
+            </span>
+          </div>
+
+          <hr>
+
+          <div class="mb-3">
+            <h6 class="text-muted small mb-2">ОСНОВНАЯ ИНФОРМАЦИЯ</h6>
+            <div class="small">
+              <div class="mb-2"><i class="bi bi-tag"></i> <strong>Тип:</strong> {{ animal.type }}</div>
+              <div class="mb-2"><i class="bi bi-tag-fill"></i> <strong>Порода:</strong> {{ animal.breed }}</div>
+              <div class="mb-2"><i class="bi bi-calendar"></i> <strong>Возраст:</strong> {{ animal.age }} {% if animal.age == 1 %}год{% elif animal.age < 5 %}года{% else %}лет{% endif %}</div>
+              <div class="mb-2">
+                <i class="bi bi-{% if animal.gender == 'Male' %}gender-male{% elif animal.gender == 'Female' %}gender-female{% else %}question-circle{% endif %}"></i>
+                <strong>Пол:</strong> {% if animal.gender == 'Male' %}Мальчик{% elif animal.gender == 'Female' %}Девочка{% else %}Неизвестно{% endif %}
+              </div>
+              {% if animal.height %}
+              <div class="mb-2"><i class="bi bi-arrows-vertical"></i> <strong>Рост:</strong> {{ animal.height }} см</div>
+              {% endif %}
+              {% if animal.weight %}
+              <div class="mb-2"><i class="bi bi-speedometer"></i> <strong>Вес:</strong> {{ animal.weight }} кг</div>
+              {% endif %}
+              {% if animal.admission_date %}
+              <div class="mb-2"><i class="bi bi-calendar-event"></i> <strong>Дата поступления:</strong> {{ animal.admission_date|date:"d.m.Y" }}</div>
+              {% endif %}
+              <div class="mb-2">
+                <i class="bi bi-{% if animal.vaccinated %}check-circle-fill text-success{% else %}x-circle text-warning{% endif %}"></i>
+                <strong>Вакцинирован:</strong> {% if animal.vaccinated %}Да{% else %}Нет{% endif %}
+              </div>
+              {% if animal.character %}
+              <div class="mb-2"><i class="bi bi-heart"></i> <strong>Характер:</strong> {{ animal.character }}</div>
+              {% endif %}
+              {% if animal.shelter_name %}
+              <div class="mb-2"><i class="bi bi-building"></i> <strong>Приют:</strong> {{ animal.shelter_name }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if animal.character_description %}
+          <div class="mb-3">
+            <h6 class="text-muted small mb-2">О ХАРАКТЕРЕ</h6>
+            <p class="small mb-0">{{ animal.character_description }}</p>
+          </div>
+          {% endif %}
+
+          {% if animal.description %}
+          <div class="mb-3">
+            <h6 class="text-muted small mb-2">ОПИСАНИЕ</h6>
+            <p class="small mb-0">{{ animal.description }}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Правая колонка: Детальная информация -->
+    <div class="col-lg-8">
+      <!-- Вакцинации -->
+      <div class="card shadow-sm mb-4" style="border-radius:16px;">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-shield-check"></i> Вакцинации ({{ vaccinations|length }})</h5>
+          <a href="{% url 'vaccination_create' %}?animal_id={{ animal.id }}" class="btn btn-sm btn-warning">
+            <i class="bi bi-plus-circle"></i> Добавить
+          </a>
+        </div>
+        <div class="card-body">
+          {% if vaccinations %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Вакцина</th>
+                  <th>Дата</th>
+                  <th>Описание</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for v in vaccinations %}
+                <tr>
+                  <td><strong>{{ v.name }}</strong></td>
+                  <td>{% if v.date %}{{ v.date|date:"d.m.Y" }}{% else %}<span class="text-muted">Не указана</span>{% endif %}</td>
+                  <td class="small text-muted">{% if v.description %}{{ v.description }}{% else %}—{% endif %}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted mb-0">Нет записей о вакцинациях</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Медицинские записи -->
+      <div class="card shadow-sm mb-4" style="border-radius:16px;">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-heart-pulse"></i> Медицинские записи ({{ medical_records|length }})</h5>
+          <a href="{% url 'medical_record_create' %}?animal_id={{ animal.id }}" class="btn btn-sm btn-warning">
+            <i class="bi bi-plus-circle"></i> Добавить
+          </a>
+        </div>
+        <div class="card-body">
+          {% if medical_records %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Состояние</th>
+                  <th>Дата диагностики</th>
+                  <th>Лечение</th>
+                  <th>Статус</th>
+                  <th>Примечания</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for m in medical_records %}
+                <tr>
+                  <td><strong>{{ m.condition }}</strong></td>
+                  <td>{% if m.diagnosis_date %}{{ m.diagnosis_date|date:"d.m.Y" }}{% else %}—{% endif %}</td>
+                  <td>{% if m.treatment %}{{ m.treatment }}{% else %}—{% endif %}</td>
+                  <td>
+                    <span class="badge {% if m.status == 'Active' %}bg-danger{% elif m.status == 'Resolved' %}bg-success{% else %}bg-secondary{% endif %}">
+                      {{ m.status }}
+                    </span>
+                  </td>
+                  <td class="small text-muted">{% if m.notes %}{{ m.notes }}{% else %}—{% endif %}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted mb-0">Нет медицинских записей</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Расписание ухода -->
+      <div class="card shadow-sm mb-4" style="border-radius:16px;">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Расписание ухода ({{ care_schedule|length }})</h5>
+          <a href="{% url 'care_schedule_list' animal.id %}" class="btn btn-sm btn-warning">
+            <i class="bi bi-plus-circle"></i> Управление расписанием
+          </a>
+        </div>
+        <div class="card-body">
+          {% if care_schedule %}
+          <div class="row g-3">
+            {% for c in care_schedule %}
+            <div class="col-md-6">
+              <div class="border rounded p-3 {% if not c.is_active %}bg-light{% endif %}">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h6 class="mb-0">{{ c.activity }}</h6>
+                  {% if not c.is_active %}
+                  <span class="badge bg-secondary">Неактивно</span>
+                  {% endif %}
+                </div>
+                <div class="small text-muted mb-1">
+                  <i class="bi bi-clock"></i> <strong>Частота:</strong> {{ c.frequency }}
+                  {% if c.time %} <span class="ms-2"><i class="bi bi-clock-history"></i> {{ c.time }}</span>{% endif %}
+                </div>
+                {% if c.description %}
+                <div class="small text-muted mb-1">{{ c.description }}</div>
+                {% endif %}
+                {% if c.notes %}
+                <div class="small text-muted"><strong>Примечания:</strong> {{ c.notes }}</div>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted mb-0">Нет записей в расписании ухода</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Заявки на усыновление -->
+      <div class="card shadow-sm mb-4" style="border-radius:16px;">
+        <div class="card-header bg-white">
+          <h5 class="mb-0"><i class="bi bi-file-check"></i> Заявки на усыновление ({{ applications|length }})</h5>
+        </div>
+        <div class="card-body">
+          {% if applications %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Дата</th>
+                  <th>Заявитель</th>
+                  <th>Контакты</th>
+                  <th>Статус</th>
+                  <th>Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for app in applications %}
+                <tr>
+                  <td>{{ app.date|date:"d.m.Y" }}</td>
+                  <td><strong>{{ app.user_name }}</strong></td>
+                  <td class="small">
+                    <div>{{ app.email }}</div>
+                    <div>{{ app.phone }}</div>
+                  </td>
+                  <td>
+                    <span class="badge {% if app.is_approved %}bg-success{% else %}bg-warning{% endif %}">
+                      {% if app.is_approved %}Одобрено{% else %}В ожидании{% endif %}
+                    </span>
+                  </td>
+                  <td>
+                    <a href="/accounts/manager/applications/{{ app.id }}/" class="btn btn-sm btn-outline-primary">
+                      <i class="bi bi-eye"></i> Просмотр
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted mb-0">Нет заявок на усыновление</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Пожертвования -->
+      <div class="card shadow-sm" style="border-radius:16px;">
+        <div class="card-header bg-white">
+          <h5 class="mb-0"><i class="bi bi-cash-coin"></i> Пожертвования ({{ donations|length }})</h5>
+        </div>
+        <div class="card-body">
+          {% if donations %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Дата</th>
+                  <th>Заявитель</th>
+                  <th>Сумма</th>
+                  <th>Комментарий</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for d in donations %}
+                <tr>
+                  <td>{{ d.date|date:"d.m.Y" }}</td>
+                  <td><strong>{{ d.user_name }}</strong></td>
+                  <td class="fw-bold text-success">{{ d.amount|floatformat:0 }} ₽</td>
+                  <td class="small text-muted">{% if d.comment %}{{ d.comment }}{% else %}—{% endif %}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot>
+                <tr class="table-light">
+                  <td colspan="2"><strong>Всего:</strong></td>
+                  <td class="fw-bold text-success">{{ total_donations|floatformat:0 }} ₽</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted mb-0">Нет пожертвований</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Хронология животного -->
+    {% if timeline %}
+    <div class="row mt-4">
+      <div class="col-12">
+        <div class="card shadow-sm" style="border-radius:16px;">
+          <div class="card-header bg-white">
+            <h5 class="mb-0">
+              <i class="bi bi-clock-history"></i> Хронология событий
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="timeline">
+              {% for event in timeline %}
+              <div class="timeline-item d-flex mb-3">
+                <div class="timeline-marker me-3">
+                  <div class="badge bg-{{ event.color }} rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="bi {{ event.icon }}"></i>
+                  </div>
+                </div>
+                <div class="timeline-content flex-grow-1">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <h6 class="mb-1">{{ event.title }}</h6>
+                      {% if event.date %}
+                        <small class="text-muted">{{ event.date|date:"d.m.Y" }}</small>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    
+    <!-- Счетчик дней в приюте -->
+    {% if days_in_shelter is not None %}
+    <div class="row mt-3">
+      <div class="col-12">
+        <div class="alert alert-info mb-0">
+          <i class="bi bi-calendar-heart"></i> 
+          <strong>{{ animal.name }}</strong> находится в приюте уже 
+          <strong>{{ days_in_shelter }}</strong> 
+          {% if days_in_shelter == 1 %}день{% elif days_in_shelter < 5 %}дня{% else %}дней{% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  .timeline-item {
+    position: relative;
+    padding-left: 0;
+  }
+  .timeline-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 19px;
+    top: 50px;
+    width: 2px;
+    height: calc(100% - 20px);
+    background: #dee2e6;
+  }
+</style>
+{% endblock %}
+

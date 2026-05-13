@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}Как помочь — Анималити{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <!-- Hero секция -->
+  <div class="text-center mb-5">
+    <div class="mb-4">
+      <i class="bi bi-heart-fill text-warning" style="font-size: 4rem;"></i>
+    </div>
+    <h1 class="display-4 fw-bold mb-4" style="color:#2b1d16;">Как помочь приюту?</h1>
+    <p class="lead mx-auto" style="max-width:720px; font-size:1.25rem; line-height:1.9; color:#5e514a;">
+      Каждая помощь важна! Вы можете поддержать наших питомцев разными способами. 
+      Выберите тот, который вам ближе всего.
+    </p>
+  </div>
+
+  <!-- Основные способы помощи -->
+  <div class="row g-4 mb-5">
+    <div class="col-md-6 col-xl-4">
+      <div class="card h-100 border-0 shadow-lg position-relative overflow-hidden" style="border-radius:20px; background: linear-gradient(135deg, #fff 0%, #FFF7EF 100%); transition: transform 0.3s;">
+        <div class="card-body p-4 text-center" style="min-height:280px; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div class="mb-4" style="width: 80px; height: 80px; margin: 0 auto; border-radius: 50%; background: linear-gradient(135deg, #F08A24 0%, #ffaa55 100%); display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-cash-coin text-white" style="font-size: 2.5rem;"></i>
+            </div>
+            <h4 class="fw-bold mb-3" style="color:#2b1d16;">Пожертвуйте</h4>
+            <p class="text-muted mb-4">Поддержите кормами или деньгами на лечение и уход. Любая сумма помогает спасать жизни!</p>
+            <ul class="list-unstyled text-start small text-muted mb-4">
+              <li class="mb-2"><i class="bi bi-check-circle-fill text-warning me-2"></i>Лечение животных</li>
+              <li class="mb-2"><i class="bi bi-check-circle-fill text-warning me-2"></i>Корма и витамины</li>
+              <li class="mb-2"><i class="bi bi-check-circle-fill text-warning me-2"></i>Оборудование</li>
+            </ul>
+          </div>
+          <a href="/animals/catalog/" class="btn btn-warning w-100">
+            <i class="bi bi-heart"></i> Сделать пожертвование
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-xl-4">
+      <div class="card h-100 border-0 shadow-lg position-relative overflow-hidden" style="border-radius:20px; background: linear-gradient(135deg, #fff 0%, #FFF7EF 100%); transition: transform 0.3s;">
+        <div class="card-body p-4 text-center" style="min-height:280px; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div class="mb-4" style="width: 80px; height: 80px; margin: 0 auto; border-radius: 50%; background: linear-gradient(135deg, #F08A24 0%, #ffaa55 100%); display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-house-heart text-white" style="font-size: 2.5rem;"></i>
+            </div>
+            <h4 class="fw-bold mb-3" style="color:#2b1d16;">Приютите питомца</h4>
+            <p class="text-muted mb-4">Подарите дом и любовь — заполните заявку и познакомьтесь с будущим другом семьи.</p>
+            <ul class="list-unstyled text-start small text-muted mb-4">
+              <li class="mb-2"><i class="bi bi-check-circle-fill text-warning me-2"></i>Постоянный дом</li>
+              <li class="mb-2"><i class="bi bi-check-circle-fill text-warning me-2"></i>Любовь и забота</li>
+              <li class="mb-2"><i class="bi bi-check-circle-fill text-warning me-2"></i>Лучшая жизнь</li>
+            </ul>
+          </div>
+          <a href="/animals/catalog/" class="btn btn-warning w-100">
+            <i class="bi bi-search"></i> Подобрать питомца
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-xl-4">
+      <div class="card h-100 border-0 shadow-lg position-relative overflow-hidden" style="border-radius:20px; background: linear-gradient(135deg, #fff 0%, #FFF7EF 100%); transition: transform 0.3s;">
+        <div class="card-body p-4 text-center" style="min-height:280px; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div class="mb-4" style="width: 80px; height: 80px; margin: 0 auto; border-radius: 50%; background: linear-gradient(135deg, #F08A24 0%, #ffaa55 100%); display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-share-fill text-white" style="font-size: 2.5rem;"></i>
+            </div>
+            <h4 class="fw-bold mb-3" style="color:#2b1d16;">Поделитесь</h4>
+            <p class="text-muted mb-4">Расскажите друзьям о наших питомцах и событиях. Ваш репост может спасти чью-то жизнь!</p>
+            <ul class="list-unstyled text-start small text-muted mb-4">
+              <li class="mb-2"><i class="bi bi-check-circle-fill text-warning me-2"></i>Социальные сети</li>
+              <li class="mb-2"><i class="bi bi-check-circle-fill text-warning me-2"></i>Рассказ друзьям</li>
+              <li class="mb-2"><i class="bi bi-check-circle-fill text-warning me-2"></i>Распространение</li>
+            </ul>
+          </div>
+          <a href="/news/" class="btn btn-warning w-100">
+            <i class="bi bi-newspaper"></i> Открыть новости
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Дополнительная информация -->
+  <div class="row g-4 mb-5">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100" style="border-radius:16px; background: #FFF7EF;">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center mb-3">
+            <div class="me-3" style="width: 60px; height: 60px; border-radius: 12px; background: linear-gradient(135deg, #F08A24 0%, #ffaa55 100%); display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-info-circle text-white" style="font-size: 1.8rem;"></i>
+            </div>
+            <h5 class="mb-0 fw-bold" style="color:#2b1d16;">Важная информация</h5>
+          </div>
+          <p class="text-muted mb-0">
+            Мы всегда рады любой помощи! Если у вас есть вопросы о том, как помочь приюту, 
+            свяжитесь с нами через форму сообщений или посетите приют лично.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100" style="border-radius:16px; background: #FFF7EF;">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center mb-3">
+            <div class="me-3" style="width: 60px; height: 60px; border-radius: 12px; background: linear-gradient(135deg, #F08A24 0%, #ffaa55 100%); display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-clock-history text-white" style="font-size: 1.8rem;"></i>
+            </div>
+            <h5 class="mb-0 fw-bold" style="color:#2b1d16;">Регулярная поддержка</h5>
+          </div>
+          <p class="text-muted mb-0">
+            Нам особенно важна регулярная помощь: еженедельные волонтерские часы, 
+            регулярные пожертвования или постоянная забота о животных. 
+            Каждая маленькая помощь имеет большое значение!
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Призыв к действию -->
+  <div class="card border-0 shadow-lg text-center" style="border-radius:20px; background: linear-gradient(135deg, #F08A24 0%, #ffaa55 100%); color: white; padding: 3rem;">
+    <h3 class="fw-bold mb-3">Готовы помочь? Начните прямо сейчас!</h3>
+    <p class="lead mb-4" style="opacity: 0.95;">
+      Выберите способ помощи или посмотрите наших питомцев, которые ждут вашей поддержки.
+    </p>
+    <div class="d-flex gap-3 justify-content-center flex-wrap">
+      <a href="/animals/catalog/" class="btn btn-light btn-lg">
+        <i class="bi bi-heart"></i> Посмотреть питомцев
+      </a>
+      <a href="/news/" class="btn btn-light btn-lg">
+        <i class="bi bi-newspaper"></i> Читать новости
+      </a>
+    </div>
+  </div>
+</div>
+
+<style>
+  .card:hover {
+    transform: translateY(-8px);
+  }
+</style>
+{% endblock %}

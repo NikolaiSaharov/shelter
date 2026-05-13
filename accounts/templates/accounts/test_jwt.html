@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Тест JWT токенов</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .info { background: #e3f2fd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #c8e6c9; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffcdd2; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .token { word-break: break-all; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>Тест JWT токенов</h1>
+    
+    {% if user %}
+    <div class="success">
+        <h2>✅ Пользователь авторизован</h2>
+        <p><strong>ID:</strong> {{ user_id }}</p>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>Имя:</strong> {{ user.first_name }} {{ user.last_name }}</p>
+    </div>
+    {% else %}
+    <div class="error">
+        <h2>❌ Пользователь не авторизован</h2>
+        <p>JWT токен не найден или невалиден</p>
+    </div>
+    {% endif %}
+    
+    <div class="info">
+        <h2>Статус токенов:</h2>
+        <p><strong>access_token:</strong> {% if has_access_token %}✅ Найден{% else %}❌ Не найден{% endif %}</p>
+        <p><strong>refresh_token:</strong> {% if has_refresh_token %}✅ Найден{% else %}❌ Не найден{% endif %}</p>
+    </div>
+    
+    {% if access_token_preview %}
+    <div class="info">
+        <h2>Превью access_token:</h2>
+        <div class="token">{{ access_token_preview }}</div>
+    </div>
+    {% endif %}
+    
+    <div class="info">
+        <h2>Все cookies:</h2>
+        <ul>
+            {% for cookie in all_cookies %}
+            <li>{{ cookie }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <p><a href="{% url 'login' %}">Войти</a> | <a href="{% url 'home' %}">На главную</a></p>
+</body>
+</html>
+

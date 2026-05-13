@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% load animal_extras %}
+{% block title %}Картотека животных — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Картотека животных</h2>
+  </div>
+
+  <!-- Фильтры -->
+  <form method="get" class="card mb-4" style="background:#FFF7EF; border-radius:16px;">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Поиск</label>
+          <input type="text" class="form-control" name="q" value="{{ search_query }}" placeholder="Имя, описание...">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Статус</label>
+          <select name="status" class="form-select">
+            <option value="">Все статусы</option>
+            {% for s in statuses %}
+              <option value="{{ s.id }}" {% if status_filter == s.id|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Тип</label>
+          <select name="type" class="form-select">
+            <option value="">Все типы</option>
+            {% for t in types %}
+              <option value="{{ t.id }}" {% if type_filter == t.id|stringformat:"s" %}selected{% endif %}>{{ t.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Порода</label>
+          <select name="breed" class="form-select">
+            <option value="">Все породы</option>
+            {% for b in breeds %}
+              <option value="{{ b.id }}" {% if breed_filter == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% if all_shelters_mode %}
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Приют</label>
+          <select name="shelter" class="form-select">
+            <option value="">Все приюты</option>
+            {% for sh in shelters %}
+              <option value="{{ sh.id }}" {% if shelter_filter == sh.id|stringformat:"s" %}selected{% endif %}>{{ sh.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">Применить</button>
+        </div>
+        <div class="col-md-1 d-flex align-items-end">
+          <a href="{% if all_shelters_mode %}{% url 'animal_card_catalog_all_shelters' %}{% else %}{% url 'animal_card_catalog' %}{% endif %}" class="btn btn-outline-secondary w-100">Сброс</a>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <!-- Карточки животных -->
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    {% for animal in animals %}
+    <div class="col">
+      <div class="card h-100 shadow-sm" style="border-radius:16px; overflow:hidden; transition:transform 0.2s;">
+        <a href="{% if all_shelters_mode %}{% url 'animal_card_detail_all_shelters' animal.id %}{% else %}{% url 'animal_card_detail' animal.id %}{% endif %}" class="text-decoration-none text-reset">
+          {% if animal.image_path %}
+            <img src="{{ animal.image_path }}" class="card-img-top" alt="{{ animal.name }}" style="height:250px; object-fit:fill;">
+          {% else %}
+            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height:250px;">
+              <i class="bi bi-image" style="font-size:3rem; color:#ccc;"></i>
+            </div>
+          {% endif %}
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <h5 class="card-title mb-0">{{ animal.name }}</h5>
+              <span class="badge {% if animal.status == 'Available' %}bg-success{% elif animal.status == 'Adopted' %}bg-primary{% else %}bg-secondary{% endif %}">
+                {{ animal.status }}
+              </span>
+            </div>
+
+            {% if all_shelters_mode and animal.shelter_name %}
+            <div class="small text-muted mb-2">
+              <i class="bi bi-building"></i> {{ animal.shelter_name }}
+            </div>
+            {% endif %}
+            
+            <div class="small text-muted mb-3">
+              <div><i class="bi bi-tag"></i> {{ animal.type }} — {{ animal.breed }}</div>
+              <div><i class="bi bi-calendar"></i> {{ animal|age_display }}</div>
+              <div>
+                <i class="bi bi-{% if animal.gender == 'Male' %}gender-male{% elif animal.gender == 'Female' %}gender-female{% else %}question-circle{% endif %}"></i>
+                {% if animal.gender == 'Male' %}Мальчик{% elif animal.gender == 'Female' %}Девочка{% else %}Неизвестно{% endif %}
+              </div>
+              {% if animal.character %}
+              <div><i class="bi bi-heart"></i> {{ animal.character }}</div>
+              {% endif %}
+              {% if animal.shelter_name %}
+              <div><i class="bi bi-building"></i> {{ animal.shelter_name }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Статистика -->
+            <div class="border-top pt-3">
+              <div class="row g-2 small">
+                <div class="col-6">
+                  <div class="text-muted">Вакцинации</div>
+                  <div class="fw-bold {% if animal.vaccination_count > 0 %}text-success{% else %}text-warning{% endif %}">
+                    <i class="bi bi-{% if animal.vaccinated %}check-circle-fill{% else %}x-circle{% endif %}"></i>
+                    {{ animal.vaccination_count }}
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="text-muted">Мед. записи</div>
+                  <div class="fw-bold {% if animal.active_medical_issues > 0 %}text-danger{% else %}text-success{% endif %}">
+                    {{ animal.medical_records_count }}
+                    {% if animal.active_medical_issues > 0 %}
+                      <span class="badge bg-danger">{{ animal.active_medical_issues }} активных</span>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="text-muted">Заявки</div>
+                  <div class="fw-bold text-primary">{{ animal.applications_count }}</div>
+                </div>
+                <div class="col-6">
+                  <div class="text-muted">Пожертвования</div>
+                  <div class="fw-bold text-success">{{ animal.total_donations|floatformat:0 }} ₽</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </a>
+        {% if not all_shelters_mode %}
+        <div class="card-footer bg-white border-top-0">
+          <a href="{% url 'animal_card_detail' animal.id %}" class="btn btn-warning btn-sm w-100">
+            <i class="bi bi-eye"></i> Подробнее
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+      <div class="text-center py-5">
+        <i class="bi bi-inbox" style="font-size:4rem; color:#ccc;"></i>
+        <p class="lead text-muted mt-3">Животные не найдены</p>
+        {% if search_query or status_filter or type_filter or breed_filter %}
+          <a href="{% url 'animal_card_catalog' %}" class="btn btn-outline-secondary">Сбросить фильтры</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Пагинация -->
+  {% if page_obj and page_obj.has_other_pages %}
+  <nav aria-label="Навигация по страницам" class="mt-4">
+    <ul class="pagination justify-content-center mb-0">
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?q={{ search_query }}&status={{ status_filter }}&type={{ type_filter }}&breed={{ breed_filter }}{% if all_shelters_mode %}&shelter={{ shelter_filter }}{% endif %}&page=1" aria-label="Первая">
+            <i class="bi bi-chevron-double-left"></i>
+          </a>
+        </li>
+        <li class="page-item">
+          <a class="page-link" href="?q={{ search_query }}&status={{ status_filter }}&type={{ type_filter }}&breed={{ breed_filter }}{% if all_shelters_mode %}&shelter={{ shelter_filter }}{% endif %}&page={{ page_obj.previous_page_number }}" aria-label="Предыдущая">
+            <i class="bi bi-chevron-left"></i>
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-left"></i></span></li>
+        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+          <li class="page-item">
+            <a class="page-link" href="?q={{ search_query }}&status={{ status_filter }}&type={{ type_filter }}&breed={{ breed_filter }}{% if all_shelters_mode %}&shelter={{ shelter_filter }}{% endif %}&page={{ num }}">{{ num }}</a>
+          </li>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?q={{ search_query }}&status={{ status_filter }}&type={{ type_filter }}&breed={{ breed_filter }}{% if all_shelters_mode %}&shelter={{ shelter_filter }}{% endif %}&page={{ page_obj.next_page_number }}" aria-label="Следующая">
+            <i class="bi bi-chevron-right"></i>
+          </a>
+        </li>
+        <li class="page-item">
+          <a class="page-link" href="?q={{ search_query }}&status={{ status_filter }}&type={{ type_filter }}&breed={{ breed_filter }}{% if all_shelters_mode %}&shelter={{ shelter_filter }}{% endif %}&page={{ page_obj.paginator.num_pages }}" aria-label="Последняя">
+            <i class="bi bi-chevron-double-right"></i>
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
+        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-right"></i></span></li>
+      {% endif %}
+    </ul>
+    <div class="text-center mt-2 text-muted small">
+      Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }} (всего {{ page_obj.paginator.count }} записей)
+    </div>
+  </nav>
+  {% endif %}
+</div>
+
+<style>
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
+  }
+</style>
+{% endblock %}
+
+

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% load tz %}
+{% block title %}Мои пожертвования — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-3">Мои пожертвования</h2>
+  {% if donations %}
+  <div class="list-group">
+    {% for d in donations %}
+    <div class="list-group-item d-flex justify-content-between align-items-center">
+      <div>
+        <div class="fw-semibold">{{ d.animal }}</div>
+        <div class="text-muted small">{{ d.date|localtime|date:'d.m.Y H:i' }}</div>
+      </div>
+      <span class="badge bg-primary">{{ d.amount }} ₽</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    <p class="text-muted">Список пожертвований пуст.</p>
+  {% endif %}
+</div>
+{% endblock %}

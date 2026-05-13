@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% load role_extras %}
+{% load tz %}
+{% block title %}Аудитлог — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Аудитлог</h2>
+    <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Назад к профилю
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for m in messages %}
+      {% if m.tags != 'success' %}
+      <div class="alert alert-{{ m.tags }} mb-3">{{ m }}</div>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+
+  <!-- Фильтры и поиск -->
+  <form method="get" class="card mb-4" style="background:#FFF7EF; border-radius:16px;">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label small fw-semibold">Поиск</label>
+          <input type="text" class="form-control" name="q" value="{{ q }}" placeholder="Описание, тип сущности">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Действие</label>
+          <select name="action" class="form-select">
+            <option value="">Все действия</option>
+            {% for action in actions %}
+              <option value="{{ action }}" {% if action_filter == action %}selected{% endif %}>
+                {{ action }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">С</label>
+          <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">По</label>
+          <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
+        </div>
+        <div class="col-md-1 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">Поиск</button>
+        </div>
+      </div>
+      {% if q or action_filter or date_from or date_to %}
+        <div class="mt-2">
+          <a href="{% url 'audit_log' %}" class="btn btn-sm btn-outline-secondary">Сбросить фильтры</a>
+        </div>
+      {% endif %}
+    </div>
+  </form>
+
+  <!-- Таблица аудитлога -->
+  <div class="card shadow-sm" style="border-radius:16px; overflow:hidden;">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead style="background:#FFF7EF;">
+          <tr>
+            <th style="width:80px;">ID</th>
+            <th style="width:150px;">Дата/Время</th>
+            <th style="width:150px;">Пользователь</th>
+            <th style="width:120px;">Действие</th>
+            <th style="width:120px;">Таблица</th>
+            <th style="width:80px;">ID записи</th>
+            <th>Изменения</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr>
+            <td class="align-middle">{{ log.LogID }}</td>
+            <td class="align-middle">
+              <div class="small">{{ log.Timestamp|date:'d.m.Y' }}</div>
+              <div class="text-muted small">{{ log.Timestamp|localtime|date:'H:i:s' }}</div>
+            </td>
+            <td class="align-middle">
+              {% if log.UserName %}
+                <div class="fw-semibold small">{{ log.UserName }}</div>
+                <div class="text-muted small">{{ log.UserEmail }}</div>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td class="align-middle">
+              <span class="badge 
+                {% if log.Action == 'Create' %}text-bg-success
+                {% elif log.Action == 'Update' %}text-bg-primary
+                {% elif log.Action == 'Delete' %}text-bg-danger
+                {% elif log.Action == 'Login' %}text-bg-info
+                {% else %}text-bg-secondary
+                {% endif %}">
+                {{ log.Action|audit_action_display }}
+              </span>
+            </td>
+            <td class="align-middle">
+              {% if log.EntityType %}
+                <span class="small">{{ log.EntityType }}</span>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td class="align-middle">
+              {% if log.EntityID %}
+                <span class="small">{{ log.EntityID }}</span>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td class="align-middle">
+              <div class="small" style="max-width:500px;" title="{{ log.Description|default:'' }}">
+                {% if log.Description %}
+                  <div class="text-break">{{ log.Description|truncatechars:200 }}</div>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox" style="font-size:3rem;"></i>
+              <div class="mt-2">Записи аудитлога не найдены</div>
+              {% if q or action_filter or date_from or date_to %}
+                <div class="mt-2 small">
+                  <p>Попробуйте изменить фильтры поиска или <a href="{% url 'audit_log' %}">сбросить их</a>.</p>
+                </div>
+              {% else %}
+                <div class="mt-2 small">
+                  <p>Возможные причины:</p>
+                  <ul class="list-unstyled">
+                    <li>• Таблица аудитлога пуста</li>
+                    <li>• Таблица не существует или имеет другое название</li>
+                    <li>• Проверьте консоль сервера для детальной информации</li>
+                  </ul>
+                </div>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <!-- Пагинация -->
+  {% if total_pages > 1 %}
+    <nav aria-label="Пагинация аудитлога" class="mt-4">
+      <ul class="pagination justify-content-center">
+        {% if has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if action_filter %}action={{ action_filter|urlencode }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ page|add:'-1' }}">
+              <i class="bi bi-chevron-left"></i> Предыдущая
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link"><i class="bi bi-chevron-left"></i> Предыдущая</span>
+          </li>
+        {% endif %}
+        
+        {% for page_num in page_numbers %}
+          {% if page_num == '...' %}
+            <li class="page-item disabled">
+              <span class="page-link">...</span>
+            </li>
+          {% elif page_num == page %}
+            <li class="page-item active">
+              <span class="page-link">{{ page_num }}</span>
+            </li>
+          {% else %}
+            <li class="page-item">
+              <a class="page-link" href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if action_filter %}action={{ action_filter|urlencode }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ page_num }}">{{ page_num }}</a>
+            </li>
+          {% endif %}
+        {% endfor %}
+        
+        {% if has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if action_filter %}action={{ action_filter|urlencode }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ page|add:'1' }}">
+              Следующая <i class="bi bi-chevron-right"></i>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link">Следующая <i class="bi bi-chevron-right"></i></span>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+    
+    <div class="mt-2 text-muted small text-center">
+      Показано {{ logs|length }} из {{ total_count }} записей (страница {{ page }} из {{ total_pages }})
+    </div>
+  {% elif logs %}
+    <div class="mt-3 text-muted small text-center">
+      Показано {{ logs|length }} записей
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+

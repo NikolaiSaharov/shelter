@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}Вакцинации — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Вакцинации</h2>
+    <a href="{% url 'vaccination_create' %}" class="btn btn-warning">
+      <i class="bi bi-plus-circle"></i> Добавить вакцинацию
+    </a>
+  </div>
+
+  <!-- Фильтры -->
+  <form method="get" class="card mb-4" style="background:#FFF7EF; border-radius:16px;">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label small fw-semibold">Поиск</label>
+          <input type="text" class="form-control" name="q" value="{{ search_query }}" placeholder="Тип вакцинации, животное...">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small fw-semibold">Животное</label>
+          <select name="animal_id" class="form-select">
+            <option value="">Все животные</option>
+            {% for a in animals %}
+              <option value="{{ a.id }}" {% if animal_id == a.id|stringformat:"s" %}selected{% endif %}>{{ a.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">Применить</button>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <a href="{% url 'vaccinations_list' %}" class="btn btn-outline-secondary w-100">Сброс</a>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <!-- Таблица вакцинаций -->
+  <div class="card shadow-sm" style="border-radius:16px; overflow:hidden;">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead style="background:#FFF7EF;">
+          <tr>
+            <th>Животное</th>
+            <th>Тип вакцинации</th>
+            <th>Последняя вакцинация</th>
+            <th>Количество</th>
+            <th style="width:200px;">Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in vaccinations %}
+          <tr>
+            <td>
+              <a href="{% url 'animal_card_detail' v.animal_id %}" class="text-decoration-none fw-semibold">
+                {{ v.animal_name }}
+              </a>
+            </td>
+            <td>
+              <strong>{{ v.vaccination_name }}</strong>
+              {% if v.description %}
+              <div class="small text-muted">{{ v.description|truncatechars:80 }}</div>
+              {% endif %}
+            </td>
+            <td>
+              {% if v.last_date %}
+                <span class="badge bg-success">{{ v.last_date|date:"d.m.Y" }}</span>
+                {% if v.count > 1 %}
+                <div class="small text-muted mt-1">Всего: {{ v.count }}</div>
+                {% endif %}
+              {% else %}
+                <span class="text-muted">Нет записей</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge bg-info">{{ v.count }}</span>
+            </td>
+            <td>
+              <div class="btn-group" role="group">
+                <a href="{% url 'vaccination_detail' v.id %}" class="btn btn-sm btn-outline-primary" title="Подробнее">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{% url 'vaccination_add_record' v.id %}" class="btn btn-sm btn-outline-success" title="Добавить дату">
+                  <i class="bi bi-plus"></i>
+                </a>
+                <form method="post" action="{% url 'vaccination_delete' v.id %}" class="d-inline js-confirm-submit"
+                      data-confirm="Удалить вакцинацию?"
+                      data-confirm-ok="Удалить">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-outline-danger" title="Удалить">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox" style="font-size:3rem;"></i>
+              <div class="mt-2">Вакцинации не найдены</div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

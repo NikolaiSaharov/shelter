@@ -1,0 +1,396 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load animal_extras %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Наши питомцы</h2>
+        <div class="text-muted small">
+            Найдено: <strong>{{ animals_data|length }}</strong> {% if animals_data|length == 1 %}питомец{% elif animals_data|length < 5 %}питомца{% else %}питомцев{% endif %}
+        </div>
+    </div>
+
+    <!-- Быстрый выбор приюта -->
+    <div class="card mb-4 shadow-sm border-0" style="border-radius:16px; background:linear-gradient(120deg, #FFEBD6, #FFF7EF);">
+        <div class="card-body d-flex flex-column flex-md-row align-items-md-center gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-white text-dark border rounded-pill px-3 py-2">
+                    <i class="bi bi-building"></i> Приют
+                </span>
+                <div class="text-muted small">Выберите приют — каталог обновится сразу</div>
+            </div>
+            <form method="get" action="/animals/catalog/" id="shelterFilterForm" class="ms-md-auto w-100 w-md-auto d-flex flex-column flex-md-row gap-2">
+                <input type="hidden" name="q" value="{{ request.GET.q|default_if_none:'' }}">
+                <input type="hidden" name="type" value="{{ request.GET.type|default_if_none:'' }}">
+                <input type="hidden" name="breed" value="{{ request.GET.breed|default_if_none:'' }}">
+                <input type="hidden" name="gender" value="{{ request.GET.gender|default_if_none:'' }}">
+                <input type="hidden" name="vaccinated" value="{{ request.GET.vaccinated|default_if_none:'' }}">
+                <input type="hidden" name="character" value="{{ request.GET.character|default_if_none:'' }}">
+                <input type="hidden" name="status" value="{{ request.GET.status|default_if_none:'' }}">
+                <input type="hidden" name="age_min" value="{{ request.GET.age_min|default_if_none:'' }}">
+                <input type="hidden" name="age_max" value="{{ request.GET.age_max|default_if_none:'' }}">
+                <input type="hidden" name="weight_min" value="{{ request.GET.weight_min|default_if_none:'' }}">
+                <input type="hidden" name="weight_max" value="{{ request.GET.weight_max|default_if_none:'' }}">
+                <select name="shelter" class="form-select shadow-sm" onchange="this.form.submit()" aria-label="Фильтр по приюту">
+                    <option value="">Все приюты</option>
+                    {% for shelter in shelters %}
+                        <option value="{{ shelter.shelter_id }}" {% if request.GET.shelter == shelter.shelter_id|stringformat:'s' %}selected{% endif %}>{{ shelter.shelter_name }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <!-- Улучшенные фильтры -->
+    <div class="card mb-4 shadow-sm" style="border-radius:16px; background:#FFF7EF; border:none;">
+        <div class="card-body p-4">
+            <form method="get" id="filterForm">
+                <!-- Основные фильтры -->
+                <div class="row g-3 mb-3">
+                    <!-- Поиск -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-search"></i> Поиск по имени
+                        </label>
+                        <input type="text" class="form-control" name="q" value="{{ request.GET.q }}" placeholder="Введите имя питомца..." pattern="[^\d]*">
+                        <div class="form-text">Поиск по имени не должен содержать цифры</div>
+                    </div>
+
+                    <!-- Тип -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-tag"></i> Тип животного
+                        </label>
+                        <select name="type" id="typeFilter" class="form-select">
+                            <option value="">Все типы</option>
+                            {% for t in types %}
+                                <option value="{{ t.type_id }}" {% if request.GET.type == t.type_id|stringformat:'s' %}selected{% endif %}>{{ t.type_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Порода -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-list-ul"></i> Порода
+                        </label>
+                        <select name="breed" id="breedFilter" class="form-select">
+                            <option value="">Любая порода</option>
+                            {% for breed in all_breeds %}
+                                <option value="{{ breed.breed_id }}" data-type-id="{{ breed.type_id }}" {% if request.GET.breed == breed.breed_id|stringformat:'s' %}selected{% endif %}>{{ breed.breed_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Дополнительные фильтры -->
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-{% if request.GET.gender == 'Male' %}gender-male{% elif request.GET.gender == 'Female' %}gender-female{% else %}person{% endif %}"></i> Пол
+                        </label>
+                        <select name="gender" class="form-select">
+                            <option value="">Любой пол</option>
+                            <option value="Male" {% if request.GET.gender == 'Male' %}selected{% endif %}>Мальчик</option>
+                            <option value="Female" {% if request.GET.gender == 'Female' %}selected{% endif %}>Девочка</option>
+                            <option value="Unknown" {% if request.GET.gender == 'Unknown' %}selected{% endif %}>Неизвестно</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-{% if request.GET.vaccinated == '1' %}check-circle-fill{% else %}circle{% endif %}"></i> Вакцинация
+                        </label>
+                        <select name="vaccinated" class="form-select">
+                            <option value="">Не важно</option>
+                            <option value="1" {% if request.GET.vaccinated == '1' %}selected{% endif %}>Да, привит</option>
+                            <option value="0" {% if request.GET.vaccinated == '0' %}selected{% endif %}>Нет</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-heart"></i> Характер
+                        </label>
+                        <select name="character" class="form-select">
+                            <option value="">Любой характер</option>
+                            {% for ch in characters %}
+                                <option value="{{ ch.character_id }}" {% if request.GET.character == ch.character_id|stringformat:'s' %}selected{% endif %}>{{ ch.character_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-info-circle"></i> Статус
+                        </label>
+                        <select name="status" class="form-select">
+                            <option value="">Любой статус</option>
+                            {% for status in statuses %}
+                                <option value="{{ status.status_id }}" {% if request.GET.status == status.status_id|stringformat:'s' %}selected{% endif %}>{{ status.status_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Фильтры по возрасту и весу -->
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-calendar"></i> Возраст от
+                        </label>
+                        <input type="number" class="form-control" name="age_min" value="{{ request.GET.age_min }}" min="0" placeholder="0">
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-calendar"></i> Возраст до
+                        </label>
+                        <input type="number" class="form-control" name="age_max" value="{{ request.GET.age_max }}" min="0" placeholder="100">
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-speedometer"></i> Вес от (кг)
+                        </label>
+                        <input type="number" class="form-control" name="weight_min" value="{{ request.GET.weight_min }}" min="0" step="0.1" placeholder="0">
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-speedometer"></i> Вес до (кг)
+                        </label>
+                        <input type="number" class="form-control" name="weight_max" value="{{ request.GET.weight_max }}" min="0" step="0.1" placeholder="100">
+                    </div>
+                </div>
+
+                <!-- Кнопки действий -->
+                <div class="row g-2 mt-4">
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <button type="submit" class="btn btn-warning w-100">
+                            <i class="bi bi-funnel"></i> Применить фильтры
+                        </button>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <a href="/animals/catalog/" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-x-circle"></i> Сбросить фильтры
+                        </a>
+                    </div>
+                    {% if request.GET.q or request.GET.type or request.GET.breed or request.GET.shelter or request.GET.gender or request.GET.vaccinated or request.GET.character or request.GET.status or request.GET.age_min or request.GET.age_max or request.GET.weight_min or request.GET.weight_max %}
+                    <div class="col-12">
+                        <div class="alert alert-info mb-0">
+                            <i class="bi bi-info-circle"></i> <strong>Активные фильтры:</strong>
+                            {% if request.GET.q %}<span class="badge bg-primary me-1">Поиск: "{{ request.GET.q }}"</span>{% endif %}
+                            {% if request.GET.type %}{% for t in types %}{% if request.GET.type == t.type_id|stringformat:"s" %}<span class="badge bg-primary me-1">Тип: {{ t.type_name }}</span>{% endif %}{% endfor %}{% endif %}
+                            {% if request.GET.breed %}{% for b in breeds %}{% if request.GET.breed == b.breed_id|stringformat:"s" %}<span class="badge bg-primary me-1">Порода: {{ b.breed_name }}</span>{% endif %}{% endfor %}{% endif %}
+                            {% if request.GET.shelter %}{% for s in shelters %}{% if request.GET.shelter == s.shelter_id|stringformat:"s" %}<span class="badge bg-primary me-1">Приют: {{ s.shelter_name }}</span>{% endif %}{% endfor %}{% endif %}
+                            {% if request.GET.gender == 'Male' %}<span class="badge bg-primary me-1">Пол: Мальчик</span>{% elif request.GET.gender == 'Female' %}<span class="badge bg-primary me-1">Пол: Девочка</span>{% endif %}
+                            {% if request.GET.vaccinated == '1' %}<span class="badge bg-primary me-1">Привит: Да</span>{% elif request.GET.vaccinated == '0' %}<span class="badge bg-primary me-1">Привит: Нет</span>{% endif %}
+                            {% if request.GET.character %}{% for ch in characters %}{% if request.GET.character == ch.character_id|stringformat:"s" %}<span class="badge bg-primary me-1">Характер: {{ ch.character_name }}</span>{% endif %}{% endfor %}{% endif %}
+                            {% if request.GET.status %}{% for s in statuses %}{% if request.GET.status == s.status_id|stringformat:"s" %}<span class="badge bg-primary me-1">Статус: {{ s.status_name }}</span>{% endif %}{% endfor %}{% endif %}
+                            {% if request.GET.age_min %}<span class="badge bg-primary me-1">Возраст от: {{ request.GET.age_min }}</span>{% endif %}
+                            {% if request.GET.age_max %}<span class="badge bg-primary me-1">Возраст до: {{ request.GET.age_max }}</span>{% endif %}
+                            {% if request.GET.weight_min %}<span class="badge bg-primary me-1">Вес от: {{ request.GET.weight_min }} кг</span>{% endif %}
+                            {% if request.GET.weight_max %}<span class="badge bg-primary me-1">Вес до: {{ request.GET.weight_max }} кг</span>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Карточки животных -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 justify-content-center">
+        {% for item in animals_data %}
+        {% with animal=item.animal days_in_shelter=item.days_in_shelter %}
+        <div class="col">
+            <a href="/animals/{{ animal.animal_id }}/" class="text-decoration-none text-reset">
+                <div class="card h-100 shadow-sm animal-card" style="border-radius:16px; overflow:hidden; transition:transform 0.2s, box-shadow 0.2s;">
+                    <div class="animal-card-media">
+                        {% if animal.image_path %}
+                            <img src="{{ animal.image_path }}" class="animal-card-image" alt="{{ animal.animal_name }}">
+                        {% else %}
+                            <div class="h-100 w-100 d-flex align-items-center justify-content-center">
+                                <i class="bi bi-image" style="font-size:4rem; color:#ccc;"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title mb-0">{{ animal.animal_name }}</h5>
+                            <div class="d-flex gap-1">
+                                {% if animal.vaccinated %}
+                                <span class="badge bg-success" title="Привит">
+                                    <i class="bi bi-shield-check"></i>
+                                </span>
+                                {% endif %}
+                                {% if item.has_approved_application %}
+                                <span class="badge bg-success" title="Уже усыновлен">
+                                    <i class="bi bi-check-circle"></i>
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="small text-muted mb-3">
+                            <div class="mb-1">
+                                <i class="bi bi-calendar"></i> {{ animal|age_display }}
+                            </div>
+                            <div class="mb-1">
+                                <i class="bi bi-{% if animal.gender == 'Male' %}gender-male{% elif animal.gender == 'Female' %}gender-female{% else %}question-circle{% endif %}"></i>
+                                {% if animal.gender == 'Male' %}Мальчик
+                                {% elif animal.gender == 'Female' %}Девочка
+                                {% elif animal.gender == 'Unknown' %}Неизвестно
+                                {% else %}{{ animal.gender|lower }}
+                                {% endif %}
+                            </div>
+                            <div class="mb-1">
+                                <i class="bi bi-tag"></i> {{ animal.breed.breed_name }}
+                            </div>
+                            {% if animal.character %}
+                            <div class="mb-1">
+                                <i class="bi bi-heart"></i> {{ animal.character.character_name }}
+                            </div>
+                            {% endif %}
+                            {% if days_in_shelter is not None %}
+                            <div class="mt-2">
+                                <span class="badge bg-warning text-dark">
+                                    <i class="bi bi-calendar-heart"></i> В приюте {{ days_in_shelter }} {% if days_in_shelter == 1 %}день{% elif days_in_shelter < 5 %}дня{% else %}дней{% endif %}
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="d-grid mt-auto">
+                            <span class="btn btn-warning">
+                                <i class="bi bi-arrow-right-circle"></i> Подробнее
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endwith %}
+        {% empty %}
+        <div class="col-12 d-flex justify-content-center">
+            <div class="text-center py-5" style="max-width: 520px; width: 100%;">
+                <i class="bi bi-inbox" style="font-size:5rem; color:#ccc;"></i>
+                <h4 class="mt-3 text-muted">Питомцы не найдены</h4>
+                <p class="text-muted">Попробуйте изменить параметры фильтра</p>
+                {% if request.GET.q or request.GET.type or request.GET.breed or request.GET.shelter or request.GET.gender or request.GET.vaccinated or request.GET.character or request.GET.status or request.GET.age_min or request.GET.age_max or request.GET.weight_min or request.GET.weight_max %}
+                <a href="/animals/catalog/" class="btn btn-warning">
+                    <i class="bi bi-x-circle"></i> Сбросить все фильтры
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    (function () {
+        const form = document.getElementById('filterForm');
+        const typeSelect = document.getElementById('typeFilter');
+        const breedSelect = document.getElementById('breedFilter');
+        if (!form || !typeSelect || !breedSelect) return;
+
+        function applyBreedFilter(resetBreedIfInvalid) {
+            const selectedType = typeSelect.value;
+            let hasSelectedBreedAfterFilter = false;
+
+            for (const option of breedSelect.options) {
+                if (!option.value) continue;
+                const isMatchingType = !selectedType || option.dataset.typeId === selectedType;
+                option.hidden = !isMatchingType;
+                if (!isMatchingType && option.selected) {
+                    option.selected = false;
+                }
+                if (option.selected) hasSelectedBreedAfterFilter = true;
+            }
+
+            if (resetBreedIfInvalid && breedSelect.value && !hasSelectedBreedAfterFilter) {
+                breedSelect.value = '';
+            }
+        }
+
+        function submitNow() {
+            // чтобы не дёргать отправку несколько раз подряд
+            if (form.dataset.submitting === '1') return;
+            form.dataset.submitting = '1';
+            setTimeout(() => {
+                form.submit();
+            }, 0);
+        }
+
+        function debounce(fn, delayMs) {
+            let t = null;
+            return function (...args) {
+                if (t) clearTimeout(t);
+                t = setTimeout(() => fn.apply(this, args), delayMs);
+            };
+        }
+
+        // 1) при загрузке страницы фильтруем список пород под текущий type
+        applyBreedFilter(true);
+
+        // 2) при смене типа сразу обновляем список пород и отправляем форму
+        typeSelect.addEventListener('change', () => {
+            applyBreedFilter(true);
+            submitNow();
+        });
+
+        // 3) при смене породы тоже отправляем форму
+        breedSelect.addEventListener('change', submitNow);
+
+        // 4) все остальные селекты отправляем сразу
+        for (const el of form.querySelectorAll('select')) {
+            if (el === typeSelect || el === breedSelect) continue;
+            el.addEventListener('change', submitNow);
+        }
+
+        // 5) числовые поля и поиск — с небольшим debounce
+        const debouncedSubmit = debounce(submitNow, 500);
+        for (const el of form.querySelectorAll('input[type="number"], input[type="text"]')) {
+            el.addEventListener('input', debouncedSubmit);
+        }
+    })();
+</script>
+
+<style>
+    .animal-card-media{
+        height: 300px;
+        width: 100%;
+        background:#f8f9fa;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+    }
+    .animal-card-image{
+        width: 100% !important;
+        height: 100% !important;
+        max-width: none !important;
+        max-height: none !important;
+        display:block;
+        object-fit: fill !important;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
+    }
+    .card-img-top {
+        transition: transform 0.3s;
+    }
+    .card:hover .card-img-top {
+        transform: scale(1.05);
+    }
+    .card:hover .animal-card-image {
+        transform: none !important;
+    }
+    /* Чуть компенсируем рост картинки, чтобы карточки не разъезжались */
+    .animal-card .card-body{
+        padding-top: .85rem;
+        padding-bottom: .85rem;
+    }
+    .animal-card .card-title{
+        margin-bottom: .35rem;
+    }
+</style>
+{% endblock %}

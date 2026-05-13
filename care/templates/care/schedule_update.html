@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}Редактирование расписания ухода — {{ animal.animal_name }} — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="mb-4">
+    <a href="{% url 'care_schedule_list' animal.animal_id %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Назад к расписанию
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm" style="border-radius:16px;">
+        <div class="card-header bg-white">
+          <h4 class="mb-0">Редактирование расписания ухода</h4>
+          <p class="text-muted mb-0 small">Животное: {{ animal.animal_name }}</p>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+              <label class="form-label">Тип активности <span class="text-danger">*</span></label>
+              <select name="activity_type_id" class="form-select" required>
+                <option value="">Выберите тип активности</option>
+                {% for activity in activities %}
+                  <option value="{{ activity.activity_type_id }}" {% if schedule.activity_type_id == activity.activity_type_id %}selected{% endif %}>
+                    {{ activity.activity_name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Частота выполнения <span class="text-danger">*</span></label>
+              <select name="frequency_id" class="form-select" required>
+                <option value="">Выберите частоту</option>
+                {% for frequency in frequencies %}
+                  <option value="{{ frequency.frequency_id }}" {% if schedule.frequency_id == frequency.frequency_id %}selected{% endif %}>
+                    {{ frequency.frequency_name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Время выполнения</label>
+              <input type="time" name="schedule_time" class="form-control" value="{% if schedule.schedule_time %}{{ schedule.schedule_time|time:'H:i' }}{% endif %}">
+              <small class="text-muted">Укажите конкретное время (необязательно)</small>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Примечания</label>
+              <textarea name="notes" class="form-control" rows="3" placeholder="Дополнительная информация о расписании...">{{ schedule.notes|default:'' }}</textarea>
+            </div>
+
+            <div class="mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="is_active" id="is_active" {% if schedule.is_active %}checked{% endif %}>
+                <label class="form-check-label" for="is_active">
+                  Активное расписание
+                </label>
+              </div>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-warning">
+                <i class="bi bi-check-circle"></i> Сохранить
+              </button>
+              <a href="{% url 'care_schedule_list' animal.animal_id %}" class="btn btn-outline-secondary">Отмена</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

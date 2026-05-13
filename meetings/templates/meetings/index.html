@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% load tz %}
+{% block title %}Видеовстречи — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Видеовстречи</h2>
+  </div>
+
+  {% if meetings %}
+  <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+    {% for m in meetings %}
+    <div class="col">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h5 class="card-title mb-0">{{ m.title }}</h5>
+            <span class="badge bg-info">{{ m.status }}</span>
+          </div>
+          <p class="text-muted small mb-2">{{ m.dt|localtime|date:'d.m.Y H:i' }} · {{ m.dur }} мин</p>
+          <p class="mb-3">{{ m.desc|default:'Без описания' }}</p>
+          <div class="d-grid gap-2">
+            <a class="btn btn-primary" href="/meetings/room/{{ m.link }}/" target="_blank">Присоединиться</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    <p class="text-muted">Встреч пока нет. Создайте первую.</p>
+  {% endif %}
+</div>
+{% endblock %}

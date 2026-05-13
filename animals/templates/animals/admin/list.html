@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load animal_extras %}
+{% block title %}Управление животными — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Управление животными</h2>
+    <a href="{% url 'animal_admin_create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle"></i> Создать животное
+    </a>
+  </div>
+
+  <!-- Фильтры и поиск -->
+  <form method="get" class="card mb-4" style="background:#FFF7EF; border-radius:16px;">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">Поиск по имени</label>
+          <input type="text" class="form-control" name="q" value="{{ request.GET.q }}" placeholder="Введите имя животного">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small fw-semibold">Статус</label>
+          <select name="status" class="form-select">
+            <option value="">Все статусы</option>
+            {% for status in statuses %}
+              <option value="{{ status.status_id }}" {% if request.GET.status == status.status_id|stringformat:'s' %}selected{% endif %}>
+                {{ status.status_name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">Поиск</button>
+        </div>
+      </div>
+      {% if request.GET.q or request.GET.status %}
+        <div class="mt-2">
+          <a href="{% url 'animal_admin_list' %}" class="btn btn-sm btn-outline-secondary">Сбросить фильтры</a>
+        </div>
+      {% endif %}
+    </div>
+  </form>
+
+  <!-- Таблица животных -->
+  <div class="card shadow-sm" style="border-radius:16px; overflow:hidden;">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead style="background:#FFF7EF;">
+          <tr>
+            <th style="width:80px;">ID</th>
+            <th style="width:100px;">Фото</th>
+            <th>Имя</th>
+            <th>Возраст</th>
+            <th>Пол</th>
+            <th>Порода</th>
+            <th>Статус</th>
+            <th>Привит</th>
+            <th style="width:200px;" class="text-end">Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for animal in animals %}
+          <tr>
+            <td class="align-middle">{{ animal.animal_id }}</td>
+            <td class="align-middle">
+              {% if animal.image_path %}
+                <img src="{{ animal.image_path }}" alt="{{ animal.animal_name }}" 
+                     style="width:60px;height:60px;object-fit:cover;border-radius:8px;">
+              {% else %}
+                <div class="d-flex align-items-center justify-content-center" 
+                     style="width:60px;height:60px;background:#FFF7EF;border-radius:8px;">
+                  <i class="bi bi-image text-muted"></i>
+                </div>
+              {% endif %}
+            </td>
+            <td class="align-middle">
+              <strong>{{ animal.animal_name }}</strong>
+              {% if animal.description %}
+                <div class="text-muted small" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                  {{ animal.description|truncatewords:10 }}
+                </div>
+              {% endif %}
+            </td>
+            <td class="align-middle">{{ animal|age_display }}</td>
+            <td class="align-middle">
+              {% if animal.gender == 'Male' %}Мужской
+              {% elif animal.gender == 'Female' %}Женский
+              {% elif animal.gender == 'Unknown' %}Неизвестно
+              {% else %}{{ animal.gender }}
+              {% endif %}
+            </td>
+            <td class="align-middle">
+              <span class="badge text-bg-light">{{ animal.breed.breed_name }}</span>
+            </td>
+            <td class="align-middle">
+              <span class="badge 
+                {% if animal.status.status_name == 'Доступен' %}text-bg-success
+                {% elif animal.status.status_name == 'Забронирован' %}text-bg-warning
+                {% elif animal.status.status_name == 'Пристроен' %}text-bg-secondary
+                {% else %}text-bg-light
+                {% endif %}">
+                {{ animal.status.status_name }}
+              </span>
+            </td>
+            <td class="align-middle">
+              {% if animal.vaccinated %}
+                <span class="badge text-bg-success"><i class="bi bi-check-circle"></i> Да</span>
+              {% else %}
+                <span class="badge text-bg-secondary"><i class="bi bi-x-circle"></i> Нет</span>
+              {% endif %}
+            </td>
+            <td class="align-middle text-end">
+              <div class="btn-group" role="group">
+                <a href="/animals/{{ animal.animal_id }}/" class="btn btn-sm btn-outline-primary" title="Просмотр">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{% url 'animal_admin_update' animal.animal_id %}" class="btn btn-sm btn-outline-warning" title="Редактировать">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <form method="post" action="{% url 'animal_admin_delete' animal.animal_id %}" class="d-inline js-confirm-submit"
+                      data-confirm="Вы уверены, что хотите удалить животное «{{ animal.animal_name }}»?"
+                      data-confirm-ok="Удалить">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-outline-danger" title="Удалить">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox" style="font-size:3rem;"></i>
+              <div class="mt-2">Животные не найдены</div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Пагинация -->
+  {% if page_obj.has_other_pages %}
+  <nav aria-label="Навигация по страницам" class="mt-4">
+    <ul class="pagination justify-content-center mb-0">
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}page=1" aria-label="Первая">
+            <i class="bi bi-chevron-double-left"></i>
+          </a>
+        </li>
+        <li class="page-item">
+          <a class="page-link" href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}page={{ page_obj.previous_page_number }}" aria-label="Предыдущая">
+            <i class="bi bi-chevron-left"></i>
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link"><i class="bi bi-chevron-double-left"></i></span>
+        </li>
+        <li class="page-item disabled">
+          <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+        </li>
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+          <li class="page-item active">
+            <span class="page-link">{{ num }}</span>
+          </li>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+          <li class="page-item">
+            <a class="page-link" href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}page={{ num }}">{{ num }}</a>
+          </li>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}page={{ page_obj.next_page_number }}" aria-label="Следующая">
+            <i class="bi bi-chevron-right"></i>
+          </a>
+        </li>
+        <li class="page-item">
+          <a class="page-link" href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}page={{ page_obj.paginator.num_pages }}" aria-label="Последняя">
+            <i class="bi bi-chevron-double-right"></i>
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+        </li>
+        <li class="page-item disabled">
+          <span class="page-link"><i class="bi bi-chevron-double-right"></i></span>
+        </li>
+      {% endif %}
+    </ul>
+    <div class="text-center mt-2 text-muted small">
+      Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }} (всего {{ page_obj.paginator.count }} записей)
+    </div>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,346 @@
+{% extends 'base.html' %}
+{% block title %}Создать животное — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Создать животное</h2>
+    <a href="{% url 'animal_admin_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Назад к списку
+    </a>
+  </div>
+
+  <div class="card shadow-sm" style="border-radius:16px;">
+    <div class="card-body p-4">
+      {% if messages %}
+        {% for m in messages %}
+          {% if 'animal_create_page' in m.extra_tags %}
+            <script>
+              document.addEventListener('DOMContentLoaded', function() {
+                if (typeof showErrorModal === 'function') {
+                  showErrorModal('{{ m|escapejs }}');
+                }
+              });
+            </script>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+      
+      <form method="post" id="animalForm" enctype="multipart/form-data" onsubmit="normalizeDecimalFields(event)">
+        {% csrf_token %}
+        
+        <div class="row g-4">
+          <!-- Основная информация -->
+          <div class="col-12">
+            <h5 class="fw-bold mb-3" style="color:#2b1d16;">Основная информация</h5>
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Имя животного <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="animal_name" value="{{ animal_name|default:'' }}" required 
+                   placeholder="Например: Барсик" pattern="[^\d]*">
+            <div class="form-text">Имя не должно содержать цифры</div>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Возраст (лет) <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" name="age" value="{{ age|default:'' }}" min="0" required>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Пол <span class="text-danger">*</span></label>
+            <select class="form-select" name="gender" required>
+              <option value="">Выберите пол</option>
+              <option value="Male" {% if gender == 'Male' or gender == 'Мужской' or gender == 'М' %}selected{% endif %}>Мужской</option>
+              <option value="Female" {% if gender == 'Female' or gender == 'Женский' or gender == 'Ж' %}selected{% endif %}>Женский</option>
+              <option value="Unknown" {% if gender == 'Unknown' %}selected{% endif %}>Неизвестно</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Тип животного</label>
+            <select class="form-select" id="type_select" onchange="filterBreeds()">
+              <option value="">Выберите тип</option>
+              {% for type in types %}
+                <option value="{{ type.type_id }}">{{ type.type_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Порода <span class="text-danger">*</span></label>
+            <select class="form-select" name="breed_id" id="breed_select" required>
+              <option value="">Выберите породу</option>
+              {% for breed in breeds %}
+                <option value="{{ breed.breed_id }}" data-type="{{ breed.type.type_id }}" 
+                        {% if breed_id == breed.breed_id|stringformat:'s' %}selected{% endif %}>
+                  {{ breed.breed_name }} ({{ breed.type.type_name }})
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Статус</label>
+            <select class="form-select" name="status_id">
+              {% for status in statuses %}
+                <option value="{{ status.status_id }}" {% if status_id == status.status_id|stringformat:'s' or status.status_name == 'Доступен' and not status_id %}selected{% endif %}>
+                  {{ status.status_name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Характер</label>
+            <select class="form-select" name="character_id">
+              <option value="">Не указан</option>
+              {% for character in characters %}
+                <option value="{{ character.character_id }}" {% if character_id == character.character_id|stringformat:'s' %}selected{% endif %}>
+                  {{ character.character_name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Приют</label>
+            <select class="form-select" name="shelter_id">
+              <option value="">Не указан</option>
+              {% for shelter in shelters %}
+                <option value="{{ shelter.shelter_id }}" {% if shelter_id == shelter.shelter_id|stringformat:'s' %}selected{% endif %}>
+                  {{ shelter.shelter_name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-12">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="vaccinated" id="vaccinated" 
+                     {% if vaccinated %}checked{% endif %}>
+              <label class="form-check-label" for="vaccinated">
+                Привит
+              </label>
+            </div>
+          </div>
+
+          <!-- Дополнительная информация -->
+          <div class="col-12 mt-2">
+            <hr>
+            <h5 class="fw-bold mb-3" style="color:#2b1d16;">Дополнительная информация</h5>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Рост <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <input type="text" class="form-control" name="height" id="height" value="{{ height|default:'' }}" 
+                     placeholder="Например: 25.5 или 25,5" pattern="[0-9]+([.,][0-9]+)?" required min="0.01" step="0.01">
+              <select class="form-select" name="height_unit" id="height_unit" style="max-width: 120px;">
+                <option value="cm" selected>см</option>
+                <option value="m">м</option>
+              </select>
+            </div>
+            <div class="form-text">Можно вводить целое число или с запятой/точкой. Рост не может быть равен 0.</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Вес (кг) <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="animal_weight" id="animal_weight" value="{{ animal_weight|default:'' }}" 
+                   placeholder="Например: 5.2 или 5,2" pattern="[0-9]+([.,][0-9]+)?" required>
+            <div class="form-text">Можно вводить целое число или с запятой/точкой</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Дата поступления</label>
+            <input type="date" class="form-control" name="admission_date" value="{{ admission_date|default:'' }}">
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Фотографии животного</label>
+            <div class="mb-2">
+              <input type="file" class="form-control" name="photo_files" id="photo_files" accept="image/*" multiple>
+              <div class="form-text">Можно выбрать несколько фотографий</div>
+            </div>
+            <div class="mt-2">
+              <label class="form-label small fw-semibold">Или укажите URL фотографий (по одному на строку):</label>
+              <textarea class="form-control" name="photo_urls" rows="3" placeholder="https://example.com/photo1.jpg&#10;https://example.com/photo2.jpg"></textarea>
+            </div>
+            <div id="photoPreview" class="mt-2 d-flex flex-wrap gap-2"></div>
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Видео животного (опционально)</label>
+            <div class="mb-2">
+              <input type="file" class="form-control" name="video_files" id="video_files" accept="video/*" multiple>
+              <div class="form-text">Можно выбрать несколько видео файлов</div>
+            </div>
+            <div class="mt-2">
+              <label class="form-label small fw-semibold">Или укажите URL видео (по одному на строку):</label>
+              <textarea class="form-control" name="video_urls" rows="2" placeholder="https://example.com/video1.mp4"></textarea>
+            </div>
+          </div>
+
+          <!-- Старое поле для обратной совместимости -->
+          <div class="col-md-12" style="display:none;">
+            <label class="form-label fw-semibold">Изображение животного (старое поле)</label>
+            <div class="mb-2">
+              <input type="file" class="form-control" name="image_file" id="image_file" accept="image/*">
+            </div>
+            <div class="mt-2">
+              <input type="text" class="form-control" name="image_path" value="{{ image_path|default:'' }}" placeholder="URL изображения">
+            </div>
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Описание</label>
+            <textarea class="form-control" name="description" rows="4" 
+                      placeholder="Опишите животное, его характер, особенности...">{{ description|default:'' }}</textarea>
+          </div>
+
+          <!-- Кнопки -->
+          <div class="col-12">
+            <hr>
+            <div class="d-flex justify-content-end gap-2">
+              <a href="{% url 'animal_admin_list' %}" class="btn btn-outline-secondary">Отмена</a>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle"></i> Создать животное
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function filterBreeds() {
+  const typeSelect = document.getElementById('type_select');
+  const breedSelect = document.getElementById('breed_select');
+  const selectedType = typeSelect.value;
+  
+  // Показываем/скрываем породы в зависимости от выбранного типа
+  for (let option of breedSelect.options) {
+    if (option.value === '') {
+      continue; // Оставляем первую опцию "Выберите породу"
+    }
+    const breedType = option.getAttribute('data-type');
+    if (!selectedType || breedType === selectedType) {
+      option.style.display = '';
+    } else {
+      option.style.display = 'none';
+    }
+  }
+  
+  // Если тип не выбран, показываем все породы
+  if (!selectedType) {
+    for (let option of breedSelect.options) {
+      option.style.display = '';
+    }
+  }
+}
+
+// Замена запятой на точку перед отправкой формы и проверка роста
+function normalizeDecimalFields(event) {
+  const heightField = document.getElementById('height');
+  const heightUnitField = document.getElementById('height_unit');
+  const weightField = document.getElementById('animal_weight');
+  
+  if (heightField && heightField.value) {
+    heightField.value = heightField.value.replace(',', '.');
+    
+    // Проверка, что рост не равен 0
+    const heightValue = parseFloat(heightField.value);
+    if (isNaN(heightValue) || heightValue <= 0) {
+      event.preventDefault();
+      alert('Рост должен быть больше 0');
+      heightField.focus();
+      return false;
+    }
+  }
+  
+  if (weightField && weightField.value) {
+    weightField.value = weightField.value.replace(',', '.');
+  }
+  
+  return true; // Разрешаем отправку формы
+}
+
+// Разрешаем ввод только цифр, точки и запятой
+document.addEventListener('DOMContentLoaded', function() {
+  const heightField = document.getElementById('height');
+  const weightField = document.getElementById('animal_weight');
+  
+  function validateDecimalInput(e) {
+    const char = e.key;
+    // Разрешаем: цифры, точка, запятая, Backspace, Delete, Tab, стрелки
+    if (!/[\d.,]/.test(char) && !['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(char)) {
+      e.preventDefault();
+      return false;
+    }
+    // Разрешаем только одну точку или запятую
+    if ((char === '.' || char === ',') && e.target.value.match(/[.,]/)) {
+      e.preventDefault();
+      return false;
+    }
+  }
+  
+  if (heightField) {
+    heightField.addEventListener('keydown', validateDecimalInput);
+  }
+  if (weightField) {
+    weightField.addEventListener('keydown', validateDecimalInput);
+  }
+  
+  // Превью загружаемых фотографий
+  const photoFilesInput = document.getElementById('photo_files');
+  const photoPreview = document.getElementById('photoPreview');
+  
+  if (photoFilesInput) {
+    photoFilesInput.addEventListener('change', function(e) {
+      photoPreview.innerHTML = '';
+      const files = Array.from(e.target.files);
+      files.forEach((file, index) => {
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.style.width = '120px';
+            img.style.height = '120px';
+            img.style.objectFit = 'cover';
+            img.style.borderRadius = '8px';
+            img.style.border = '2px solid #dee2e6';
+            img.className = 'mb-2';
+            photoPreview.appendChild(img);
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    });
+  }
+  
+  // Превью загружаемого изображения (старое поле для обратной совместимости)
+  const imageFileInput = document.getElementById('image_file');
+  const imagePreview = document.getElementById('imagePreview');
+  const previewImg = document.getElementById('previewImg');
+  
+  if (imageFileInput) {
+    imageFileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          previewImg.src = e.target.result;
+          imagePreview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        imagePreview.style.display = 'none';
+      }
+    });
+  }
+});
+</script>
+{% endblock %}
+

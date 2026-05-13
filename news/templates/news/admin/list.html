@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load tz %}
+{% block title %}Управление новостями — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Управление новостями</h2>
+    <a href="{% url 'news_admin_create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle"></i> Создать новость
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Фильтры и поиск -->
+  <form method="get" class="card mb-4" style="background:#FFF7EF; border-radius:16px;">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">Поиск по заголовку</label>
+          <input type="text" class="form-control" name="q" value="{{ request.GET.q }}" placeholder="Введите заголовок новости">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small fw-semibold">Статус публикации</label>
+          <select name="published" class="form-select">
+            <option value="">Все</option>
+            <option value="1" {% if request.GET.published == '1' %}selected{% endif %}>Опубликовано</option>
+            <option value="0" {% if request.GET.published == '0' %}selected{% endif %}>Не опубликовано</option>
+          </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">Поиск</button>
+        </div>
+      </div>
+      {% if request.GET.q or request.GET.published %}
+        <div class="mt-2">
+          <a href="{% url 'news_admin_list' %}" class="btn btn-sm btn-outline-secondary">Сбросить фильтры</a>
+        </div>
+      {% endif %}
+    </div>
+  </form>
+
+  <!-- Таблица новостей -->
+  <div class="card shadow-sm" style="border-radius:16px; overflow:hidden;">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead style="background:#FFF7EF;">
+          <tr>
+            <th style="width:60px;">ID</th>
+            <th style="width:120px;">Изображение</th>
+            <th>Заголовок</th>
+            <th>Автор</th>
+            <th style="width:150px;">Дата</th>
+            <th style="width:120px;">Статус</th>
+            <th style="width:200px;" class="text-end">Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for news in news_list %}
+          <tr>
+            <td class="align-middle">{{ news.news_id }}</td>
+            <td class="align-middle">
+              {% if news.image_path %}
+                <img src="{{ news.image_path }}" alt="{{ news.title }}" 
+                     style="width:80px;height:60px;object-fit:cover;border-radius:8px;" 
+                     referrerpolicy="no-referrer" onerror="this.style.display='none'">
+              {% else %}
+                <div class="d-flex align-items-center justify-content-center" 
+                     style="width:80px;height:60px;background:#FFF7EF;border-radius:8px;">
+                  <i class="bi bi-image text-muted"></i>
+                </div>
+              {% endif %}
+            </td>
+            <td class="align-middle">
+              <strong>{{ news.title }}</strong>
+              <div class="text-muted small" style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                {{ news.content|striptags|truncatewords:15 }}
+              </div>
+            </td>
+            <td class="align-middle">
+              <div class="small">{{ news.user.first_name }} {{ news.user.last_name }}</div>
+              <div class="text-muted small">{{ news.user.email }}</div>
+            </td>
+            <td class="align-middle">
+              <div class="small">{{ news.post_date|date:'d.m.Y' }}</div>
+              <div class="text-muted small">{{ news.post_date|localtime|date:'H:i' }}</div>
+            </td>
+            <td class="align-middle">
+              {% if news.is_published %}
+                <span class="badge text-bg-success"><i class="bi bi-check-circle"></i> Опубликовано</span>
+              {% else %}
+                <span class="badge text-bg-secondary"><i class="bi bi-x-circle"></i> Черновик</span>
+              {% endif %}
+            </td>
+            <td class="align-middle text-end">
+              <div class="btn-group" role="group">
+                <a href="/news/{{ news.news_id }}/" class="btn btn-sm btn-outline-primary" title="Просмотр">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{% url 'news_admin_update' news.news_id %}" class="btn btn-sm btn-outline-warning" title="Редактировать">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <button type="button" class="btn btn-sm btn-outline-danger" title="Удалить" 
+                        onclick="showDeleteModal({{ news.news_id }}, '{{ news.title|escapejs }}')">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox" style="font-size:3rem;"></i>
+              <div class="mt-2">Новости не найдены</div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно удаления новости -->
+<div class="modal fade" id="deleteNewsModal" tabindex="-1" aria-labelledby="deleteNewsModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteNewsModalLabel">Подтверждение удаления</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Вы уверены, что хотите удалить новость <strong id="deleteNewsTitle"></strong>?</p>
+        <p class="text-muted small mb-0">Это действие нельзя отменить.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <form method="post" id="deleteNewsForm" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">Удалить</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function showDeleteModal(newsId, newsTitle) {
+    document.getElementById('deleteNewsTitle').textContent = '«' + newsTitle + '»';
+    document.getElementById('deleteNewsForm').action = '/news/admin/' + newsId + '/delete/';
+    const modal = new bootstrap.Modal(document.getElementById('deleteNewsModal'));
+    modal.show();
+  }
+</script>
+{% endblock %}
+

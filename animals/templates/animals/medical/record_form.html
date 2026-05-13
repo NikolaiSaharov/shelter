@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}{% if record.id %}Редактирование{% else %}Создание{% endif %} медицинской записи — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="mb-4">
+    <a href="{% url 'medical_records_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Назад к списку
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm" style="border-radius:16px;">
+        <div class="card-header bg-white">
+          <h4 class="mb-0">{% if record.id %}Редактирование{% else %}Создание{% endif %} медицинской записи</h4>
+        </div>
+        <div class="card-body">
+          {% if errors %}
+            <div class="alert alert-danger" role="alert">
+              <ul class="mb-0 ps-3">
+                {% for err in errors %}
+                  <li>{{ err }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+          <form method="post">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+              <label class="form-label">Животное <span class="text-danger">*</span></label>
+              <select name="animal_id" class="form-select" required>
+                <option value="">Выберите животное</option>
+                {% for a in animals %}
+                  <option value="{{ a.id }}" {% if record.animal_id == a.id or animal_id == a.id|stringformat:"s" %}selected{% endif %}>
+                    {{ a.name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Название состояния/диагноза <span class="text-danger">*</span></label>
+              <input type="text" name="condition_name" class="form-control" value="{{ record.condition_name }}" required placeholder="Например: Простуда, Перелом, и т.д.">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Дата диагностики</label>
+              <input type="date" name="diagnosis_date" class="form-control" value="{{ record.diagnosis_date }}">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Лечение</label>
+              <textarea name="treatment" class="form-control" rows="3" placeholder="Опишите назначенное лечение...">{{ record.treatment }}</textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Статус</label>
+              <select name="status" class="form-select">
+                <option value="Active" {% if record.status == 'Active' %}selected{% endif %}>Активная</option>
+                <option value="Resolved" {% if record.status == 'Resolved' %}selected{% endif %}>Решена</option>
+                <option value="Chronic" {% if record.status == 'Chronic' %}selected{% endif %}>Хроническая</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Примечания</label>
+              <textarea name="notes" class="form-control" rows="3" placeholder="Дополнительная информация...">{{ record.notes }}</textarea>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-warning">
+                <i class="bi bi-check-circle"></i> {% if record.id %}Сохранить{% else %}Создать{% endif %}
+              </button>
+              <a href="{% url 'medical_records_list' %}" class="btn btn-outline-secondary">Отмена</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+

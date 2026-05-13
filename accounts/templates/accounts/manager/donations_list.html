@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load tz %}
+{% block title %}Пожертвования — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Пожертвования</h2>
+  </div>
+
+  <!-- Статистика -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-3">
+      <div class="card h-100 shadow-sm border-0" style="border-radius:16px; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="card-body text-white">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <h6 class="card-subtitle mb-2 opacity-75">Всего</h6>
+              <h2 class="mb-0">{{ stats.total }}</h2>
+            </div>
+            <i class="bi bi-heart" style="font-size:2.5rem; opacity:0.3;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card h-100 shadow-sm border-0" style="border-radius:16px; background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+        <div class="card-body text-white">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <h6 class="card-subtitle mb-2 opacity-75">Общая сумма</h6>
+              <h3 class="mb-0">{{ stats.total_amount|floatformat:2 }} ₽</h3>
+            </div>
+            <i class="bi bi-cash-stack" style="font-size:2.5rem; opacity:0.3;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card h-100 shadow-sm border-0" style="border-radius:16px; background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+        <div class="card-body text-white">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <h6 class="card-subtitle mb-2 opacity-75">Средняя</h6>
+              <h3 class="mb-0">{{ stats.avg_amount|floatformat:2 }} ₽</h3>
+            </div>
+            <i class="bi bi-graph-up" style="font-size:2.5rem; opacity:0.3;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card h-100 shadow-sm border-0" style="border-radius:16px; background:linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+        <div class="card-body text-white">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <h6 class="card-subtitle mb-2 opacity-75">Максимум</h6>
+              <h3 class="mb-0">{{ stats.max_amount|floatformat:2 }} ₽</h3>
+            </div>
+            <i class="bi bi-arrow-up-circle" style="font-size:2.5rem; opacity:0.3;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Фильтры -->
+  <form method="get" class="card mb-4" style="background:#FFF7EF; border-radius:16px;">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label small fw-semibold">Поиск</label>
+          <input type="text" class="form-control" name="q" value="{{ search_query }}" placeholder="Животное, имя, email">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Дата от</label>
+          <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Дата до</label>
+          <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">Поиск</button>
+        </div>
+      </div>
+      {% if search_query or date_from or date_to %}
+        <div class="mt-2">
+          <a href="{% url 'donations_manager_list' %}" class="btn btn-sm btn-outline-secondary">Сбросить фильтры</a>
+        </div>
+      {% endif %}
+    </div>
+  </form>
+
+  <!-- Таблица пожертвований -->
+  <div class="card shadow-sm border-0" style="border-radius:16px; overflow:hidden;">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead style="background:#FFF7EF;">
+          <tr>
+            <th style="width:80px;">ID</th>
+            <th>Пользователь</th>
+            <th>Животное</th>
+            <th class="text-end">Сумма</th>
+            <th>Дата</th>
+            <th>Комментарий</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for donation in donations %}
+          <tr>
+            <td class="align-middle">{{ donation.id }}</td>
+            <td class="align-middle">
+              <div class="fw-semibold">{{ donation.user_name }}</div>
+              <div class="text-muted small">{{ donation.email }}</div>
+            </td>
+            <td class="align-middle">
+              <a href="/animals/{{ donation.animal_id }}/" class="text-decoration-none">
+                {{ donation.animal_name }}
+              </a>
+            </td>
+            <td class="align-middle text-end">
+              <span class="fw-bold text-success">{{ donation.amount|floatformat:2 }} ₽</span>
+            </td>
+            <td class="align-middle">
+              <div class="small">{{ donation.date|date:'d.m.Y' }}</div>
+              <div class="text-muted small">{{ donation.date|localtime|date:'H:i' }}</div>
+            </td>
+            <td class="align-middle">
+              <div class="text-muted small">{{ donation.comment|default:'—'|truncatewords:10 }}</div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox" style="font-size:3rem;"></i>
+              <div class="mt-2">Пожертвования не найдены</div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Пагинация -->
+  {% if page_obj.has_other_pages %}
+  <nav aria-label="Навигация по страницам" class="mt-4">
+    <ul class="pagination justify-content-center mb-0">
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page=1" aria-label="Первая">
+            <i class="bi bi-chevron-double-left"></i>
+          </a>
+        </li>
+        <li class="page-item">
+          <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ page_obj.previous_page_number }}" aria-label="Предыдущая">
+            <i class="bi bi-chevron-left"></i>
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link"><i class="bi bi-chevron-double-left"></i></span>
+        </li>
+        <li class="page-item disabled">
+          <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+        </li>
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+          <li class="page-item active">
+            <span class="page-link">{{ num }}</span>
+          </li>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+          <li class="page-item">
+            <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ num }}">{{ num }}</a>
+          </li>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ page_obj.next_page_number }}" aria-label="Следующая">
+            <i class="bi bi-chevron-right"></i>
+          </a>
+        </li>
+        <li class="page-item">
+          <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ page_obj.paginator.num_pages }}" aria-label="Последняя">
+            <i class="bi bi-chevron-double-right"></i>
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+        </li>
+        <li class="page-item disabled">
+          <span class="page-link"><i class="bi bi-chevron-double-right"></i></span>
+        </li>
+      {% endif %}
+    </ul>
+    <div class="text-center mt-2 text-muted small">
+      Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }} (всего {{ page_obj.paginator.count }} записей)
+    </div>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Создать породу — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Создать породу</h2>
+    <a href="{% url 'breed_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Назад к списку
+    </a>
+  </div>
+
+  <div class="card shadow-sm" style="border-radius:16px;">
+    <div class="card-body p-4">
+      <form method="post">
+        {% csrf_token %}
+        
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Название породы <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="breed_name" value="{{ breed_name|default:'' }}" required 
+                 placeholder="Например: Лабрадор, Персидская">
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Тип животного <span class="text-danger">*</span></label>
+          <select class="form-select" name="type_id" required>
+            <option value="">Выберите тип</option>
+            {% for type in types %}
+              <option value="{{ type.type_id }}" {% if type_id == type.type_id|stringformat:'s' %}selected{% endif %}>
+                {{ type.type_name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'breed_list' %}" class="btn btn-outline-secondary">Отмена</a>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle"></i> Создать породу
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

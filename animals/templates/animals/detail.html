@@ -1,0 +1,1177 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load animal_extras %}
+{% block title %}{{ animal.animal_name }} — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="row g-4 align-items-start">
+    <div class="col-md-6">
+      <!-- Галерея медиа-файлов -->
+      <div class="card shadow-sm overflow-hidden" style="border-radius:16px;">
+        {% if photos or videos or animal.image_path %}
+          <div id="animalMediaCarousel" class="carousel slide" data-bs-ride="false" style="height:520px;">
+            <div class="carousel-inner" style="height:100%;">
+              {% if photos %}
+                {% for photo in photos %}
+                <div class="carousel-item {% if forloop.first %}active{% endif %}" style="height:100%;">
+                  <img src="{{ photo.media_path }}" class="d-block w-100" style="height:100%; object-fit:cover;" alt="{{ animal.animal_name }} - фото {{ forloop.counter }}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='{% static 'no-photo.png' %}';">
+                </div>
+                {% endfor %}
+              {% elif animal.image_path %}
+                <div class="carousel-item active" style="height:100%;">
+                  <img src="{{ animal.image_path }}" class="d-block w-100" style="height:100%; object-fit:cover;" alt="{{ animal.animal_name }}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='{% static 'no-photo.png' %}';">
+                </div>
+              {% endif %}
+              
+              {% if videos %}
+                {% for video in videos %}
+                <div class="carousel-item {% if not photos and forloop.first %}active{% endif %}" style="height:100%; background:#000;" data-video-index="{{ forloop.counter0 }}" data-video-url="{{ video.media_path }}">
+                  <div class="d-flex align-items-center justify-content-center h-100" id="video-container-{{ forloop.counter0 }}">
+                    {# Контент будет вставлен через JavaScript для правильной обработки YouTube/VK URL #}
+                  </div>
+                </div>
+                {% endfor %}
+              {% endif %}
+            </div>
+            
+            {% if photos %}
+              {% if photos|length > 1 or videos %}
+              <button class="carousel-control-prev" type="button" data-bs-target="#animalMediaCarousel" data-bs-slide="prev" style="background: rgba(240, 138, 36, 0.3); backdrop-filter: blur(4px);">
+                <span class="carousel-control-prev-icon" aria-hidden="true" style="filter: brightness(0) saturate(100%) invert(60%) sepia(93%) saturate(1352%) hue-rotate(1deg) brightness(101%) contrast(101%);"></span>
+                <span class="visually-hidden">Предыдущее</span>
+              </button>
+              <button class="carousel-control-next" type="button" data-bs-target="#animalMediaCarousel" data-bs-slide="next" style="background: rgba(240, 138, 36, 0.3); backdrop-filter: blur(4px);">
+                <span class="carousel-control-next-icon" aria-hidden="true" style="filter: brightness(0) saturate(100%) invert(60%) sepia(93%) saturate(1352%) hue-rotate(1deg) brightness(101%) contrast(101%);"></span>
+                <span class="visually-hidden">Следующее</span>
+              </button>
+              
+              <div class="carousel-indicators">
+                {% for photo in photos %}
+                <button type="button" data-bs-target="#animalMediaCarousel" data-bs-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active"{% endif %} aria-label="Фото {{ forloop.counter }}"></button>
+                {% endfor %}
+                {% if videos %}
+                  {% with photo_count=photos|length %}
+                    {% for video in videos %}
+                    <button type="button" data-bs-target="#animalMediaCarousel" data-bs-slide-to="{{ forloop.counter0|add:photo_count }}" aria-label="Видео {{ forloop.counter }}"></button>
+                    {% endfor %}
+                  {% endwith %}
+                {% endif %}
+              </div>
+              {% endif %}
+            {% elif videos %}
+              {% if videos|length > 1 %}
+              <button class="carousel-control-prev" type="button" data-bs-target="#animalMediaCarousel" data-bs-slide="prev" style="background: rgba(240, 138, 36, 0.3); backdrop-filter: blur(4px);">
+                <span class="carousel-control-prev-icon" aria-hidden="true" style="filter: brightness(0) saturate(100%) invert(60%) sepia(93%) saturate(1352%) hue-rotate(1deg) brightness(101%) contrast(101%);"></span>
+                <span class="visually-hidden">Предыдущее</span>
+              </button>
+              <button class="carousel-control-next" type="button" data-bs-target="#animalMediaCarousel" data-bs-slide="next" style="background: rgba(240, 138, 36, 0.3); backdrop-filter: blur(4px);">
+                <span class="carousel-control-next-icon" aria-hidden="true" style="filter: brightness(0) saturate(100%) invert(60%) sepia(93%) saturate(1352%) hue-rotate(1deg) brightness(101%) contrast(101%);"></span>
+                <span class="visually-hidden">Следующее</span>
+              </button>
+              
+              <div class="carousel-indicators">
+                {% for video in videos %}
+                <button type="button" data-bs-target="#animalMediaCarousel" data-bs-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active"{% endif %} aria-label="Видео {{ forloop.counter }}"></button>
+                {% endfor %}
+              </div>
+              {% endif %}
+            {% elif animal.image_path %}
+              <!-- Для одного изображения карусель не нужна, но оставляем структуру -->
+            {% endif %}
+          </div>
+        {% else %}
+          <img src="{% static 'no-photo.png' %}" class="w-100" style="height:520px; object-fit:cover;" alt="Без фото">
+        {% endif %}
+      </div>
+    </div>
+    <div class="col-md-6">
+      <p class="text-uppercase small fw-semibold" style="letter-spacing:.06em; color:#F08A24;">Наш питомец</p>
+      <h1 class="display-5 fw-bold" style="color:#2b1d16;">{{ animal.animal_name }}</h1>
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <span class="badge text-bg-light border">{{ animal|age_display }}</span>
+        <span class="badge text-bg-light border">
+          {% if animal.gender == 'Male' %}Мужской
+          {% elif animal.gender == 'Female' %}Женский
+          {% elif animal.gender == 'Unknown' %}Неизвестно
+          {% else %}{{ animal.gender }}
+          {% endif %}
+        </span>
+        <span class="badge text-bg-light border">{{ animal.breed.breed_name }}</span>
+        {% if animal.shelter %}
+        <span class="badge text-bg-light border">
+          <i class="bi bi-building"></i> {{ animal.shelter.shelter_name }}
+        </span>
+        {% endif %}
+        {% if days_in_shelter is not None %}
+        <span class="badge bg-warning">
+          <i class="bi bi-calendar-heart"></i> В приюте {{ days_in_shelter }} {% if days_in_shelter == 1 %}день{% elif days_in_shelter < 5 %}дня{% else %}дней{% endif %}
+        </span>
+        {% endif %}
+        {% if has_approved_application %}
+        <span class="badge bg-success">
+          <i class="bi bi-check-circle"></i> Уже усыновлен
+        </span>
+        {% endif %}
+      </div>
+      {% if animal.description %}
+      <p class="text-muted">{{ animal.description }}</p>
+      {% endif %}
+
+      {% if animal.shelter %}
+      <div class="card border-0 mb-3" style="background:#FFF7EF; border-radius:16px;">
+        <div class="card-body">
+          <div class="d-flex align-items-start gap-3">
+            <div class="d-inline-flex align-items-center justify-content-center flex-shrink-0"
+                 style="width:44px;height:44px;border-radius:12px;background:rgba(240,138,36,.15);color:#F08A24;">
+              <i class="bi bi-building" style="font-size:1.25rem;"></i>
+            </div>
+            <div>
+              <div class="text-muted small">Приют</div>
+              <div class="fw-bold" style="color:#2b1d16;">{{ animal.shelter.shelter_name }}</div>
+              {% if animal.shelter.address %}
+              <div class="small text-muted mt-1"><i class="bi bi-geo-alt"></i> {{ animal.shelter.address }}</div>
+              {% endif %}
+              {% if animal.shelter.phone %}
+              <div class="small text-muted mt-1"><i class="bi bi-telephone"></i> {{ animal.shelter.phone }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="row g-3 mb-3">
+        <div class="col-sm-6">
+          <div class="card border-0" style="background:#FFF7EF; border-radius:16px;">
+            <div class="card-body">
+              <div class="text-muted small">Прививки</div>
+              <div class="fw-semibold mt-1">{% if animal.vaccinated %}Привит{% else %}Не привит{% endif %}</div>
+              <div class="text-muted small">Статус: {{ animal.status.status_name }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6">
+          <div class="card border-0" style="background:#FFF7EF; border-radius:16px;">
+            <div class="card-body">
+              <div class="text-muted small">Информация</div>
+              <div class="text-muted small mt-1">Рост: {% if height_cm %}{{ height_cm|floatformat:1 }}{% else %}—{% endif %} см</div>
+              <div class="text-muted small">Вес: {% if animal.animal_weight %}{{ animal.animal_weight|floatformat:1 }} кг{% else %}—{% endif %}</div>
+              {% if animal.character %}<div class="text-muted small">Характер: {{ animal.character.character_name }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <a class="btn btn-primary" href="/donations/create/?animal_id={{ animal.animal_id }}&t={% now 'U' %}" onclick="return checkAuthBeforeDonation(event, this)">Сделать пожертвование</a>
+        {% if is_admin_or_manager %}
+        <button class="btn btn-outline-secondary" onclick="showAdminManagerModal()">Выбрать</button>
+        {% elif has_approved_application %}
+        <button class="btn btn-outline-secondary" onclick="showAdoptedModal()">Выбрать</button>
+        {% else %}
+        <button class="btn btn-outline-secondary" onclick="openApp()">Выбрать</button>
+        {% endif %}
+        <a class="btn btn-outline-secondary" href="/animals/catalog/">Назад к каталогу</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Убрана модалка пожертвования: используем отдельную страницу donations/create -->
+
+<!-- Модалка заявки -->
+<div id="appModal" class="modal fade" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="border-radius:16px;">
+      <div class="modal-header" style="background:#FFF7EF;">
+        <h5 class="modal-title">Заявка на питомца: {{ animal.animal_name }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="applicationForm" method="post" action="/animals/apply/" onsubmit="return submitApplication(event)">
+        {% csrf_token %}
+        <input type="hidden" name="animal_id" value="{{ animal.animal_id }}">
+        <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Причина *</label>
+            <textarea id="appReason" name="reason" class="form-control" rows="3" placeholder="Почему вы хотите забрать питомца" required></textarea>
+            <div class="invalid-feedback">Укажите причину усыновления</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Опыт *</label>
+            <textarea id="appExp" name="experience" class="form-control" rows="3" placeholder="Есть ли опыт ухода за животными" required></textarea>
+            <div class="invalid-feedback">Укажите опыт ухода за животными</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Жилищные условия *</label>
+            <textarea id="appHouse" name="housing" class="form-control" rows="3" placeholder="Квартира/дом, наличие двора, другие животные" required></textarea>
+            <div class="invalid-feedback">Укажите жилищные условия</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Комментарий</label>
+            <textarea id="appComment" name="comment" class="form-control" rows="3" placeholder="Дополнительная информация"></textarea>
+          </div>
+        </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="submit" class="btn btn-primary" id="submitAppBtn">
+            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+            <span class="btn-text">Отправить заявку</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка для менеджеров и админов -->
+<div id="adminManagerModal" class="modal fade" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg" style="border-radius:20px; overflow:hidden; border:none;">
+      <div class="modal-header border-0 text-center d-block" style="background:linear-gradient(135deg, #FFF7EF 0%, #FFE8D6 100%); padding:2rem 1.5rem 1rem;">
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="mb-3">
+          <div style="width:80px; height:80px; margin:0 auto; background:linear-gradient(135deg, #F08A24 0%, #FF6B35 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(240, 138, 36, 0.3);">
+            <i class="bi bi-shield-exclamation-fill text-white" style="font-size: 42px;"></i>
+          </div>
+        </div>
+        <h4 class="modal-title fw-bold mb-2" style="color:#2b1d16;">Недоступно для администраторов</h4>
+      </div>
+      <div class="modal-body text-center py-4 px-4">
+        <p class="lead mb-3" style="color:#2b1d16; font-size:1.1rem;">
+          Менеджеры и администраторы не могут подавать заявки на усыновление животных
+        </p>
+        <div class="bg-light rounded p-3 mb-3" style="border-left:4px solid #F08A24;">
+          <p class="text-muted mb-2 small">
+            <i class="bi bi-info-circle text-primary"></i> 
+            Это ограничение установлено для соблюдения правил работы системы приюта
+          </p>
+        </div>
+        <div class="d-flex flex-column gap-2 mt-4">
+          <p class="text-muted small mb-0">Вы можете помочь нашим питомцам другим способом:</p>
+          <div class="d-flex gap-2 justify-content-center">
+            <a class="btn btn-primary" href="/donations/create/?animal_id={{ animal.animal_id }}&t={% now 'U' %}" style="border-radius:10px;">
+              <i class="bi bi-cash-coin"></i> Сделать пожертвование
+            </a>
+            <a class="btn btn-outline-secondary" href="/animals/catalog/" style="border-radius:10px;">
+              <i class="bi bi-search"></i> Смотреть каталог
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 justify-content-center pb-4">
+        <button type="button" class="btn btn-warning px-5 fw-semibold" data-bs-dismiss="modal" style="border-radius:10px; box-shadow:0 4px 12px rgba(240, 138, 36, 0.3);">
+          Понятно
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка для уже усыновленного животного -->
+<div id="adoptedModal" class="modal fade" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" style="border-radius:16px;">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-check-circle"></i> {{ animal.animal_name }} уже усыновлен
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <div class="mb-4">
+          <i class="bi bi-heart-fill text-success" style="font-size: 4rem;"></i>
+        </div>
+        <h5 class="mb-3">Отличные новости!</h5>
+        <p class="lead mb-3">
+          {{ animal.animal_name }} уже нашел своего хозяина!
+        </p>
+        <p class="text-muted">
+          Заявка на усыновление была одобрена, и животное ждет, пока новый хозяин его заберет.
+        </p>
+        <p class="text-muted small mt-3">
+          Но вы можете помочь другим нашим питомцам, сделав пожертвование или выбрав другого друга!
+        </p>
+      </div>
+      <div class="modal-footer justify-content-center">
+        <a class="btn btn-primary" href="/donations/create/?animal_id={{ animal.animal_id }}&t={% now 'U' %}">
+          <i class="bi bi-cash-coin"></i> Сделать пожертвование
+        </a>
+        <a class="btn btn-outline-secondary" href="/animals/catalog/">
+          <i class="bi bi-search"></i> Найти другого питомца
+        </a>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно успешной отправки заявки -->
+<div id="successModal" class="modal fade" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg" style="border-radius:20px; overflow:hidden; border:none;">
+      <div class="modal-header border-0 text-center d-block" style="background:linear-gradient(135deg, #FFF7EF 0%, #FFE8D6 100%); padding:2rem 1.5rem 1rem;">
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="mb-3">
+          <div style="width:80px; height:80px; margin:0 auto; background:linear-gradient(135deg, #28a745 0%, #20c997 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(40, 167, 69, 0.3);">
+            <i class="bi bi-check-circle-fill text-white" style="font-size: 42px;"></i>
+          </div>
+        </div>
+        <h4 class="modal-title fw-bold mb-2" style="color:#2b1d16;">Заявка отправлена!</h4>
+      </div>
+      <div class="modal-body text-center py-4 px-4">
+        <p class="lead mb-3" style="color:#2b1d16; font-size:1.1rem;">
+          Ваша заявка отправлена в обработку, следите за статусов в профиле
+        </p>
+        <div class="bg-light rounded p-3 mb-3" style="border-left:4px solid #28a745;">
+          <p class="text-muted mb-0 small">
+            <i class="bi bi-info-circle text-success"></i> 
+            Мы рассмотрим вашу заявку и свяжемся с вами в ближайшее время
+          </p>
+        </div>
+        <div class="d-flex gap-2 justify-content-center mt-4">
+          <a class="btn btn-primary" href="/accounts/profile/?tab=applications" style="border-radius:10px;">
+            <i class="bi bi-person-circle"></i> Перейти в профиль
+          </a>
+          <a class="btn btn-outline-secondary" href="/animals/catalog/" style="border-radius:10px;">
+            <i class="bi bi-search"></i> Посмотреть других питомцев
+          </a>
+        </div>
+      </div>
+      <div class="modal-footer border-0 justify-content-center pb-4">
+        <button type="button" class="btn btn-success px-5 fw-semibold" data-bs-dismiss="modal" style="border-radius:10px; box-shadow:0 4px 12px rgba(40, 167, 69, 0.3);">
+          Понятно
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно ошибки существующей заявки -->
+<div id="existingApplicationModal" class="modal fade" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg" style="border-radius:20px; overflow:hidden; border:none;">
+      <div class="modal-header border-0 text-center d-block" style="background:linear-gradient(135deg, #FFF7EF 0%, #FFE8D6 100%); padding:2rem 1.5rem 1rem;">
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="mb-3">
+          <div style="width:80px; height:80px; margin:0 auto; background:linear-gradient(135deg, #ffc107 0%, #ff9800 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(255, 193, 7, 0.3);">
+            <i class="bi bi-clock-history text-white" style="font-size: 42px;"></i>
+          </div>
+        </div>
+        <h4 class="modal-title fw-bold mb-2" style="color:#2b1d16;">Заявка уже существует</h4>
+      </div>
+      <div class="modal-body text-center py-4 px-4">
+        <p class="lead mb-3" style="color:#2b1d16; font-size:1.1rem;">
+          Дождитесь пожалуйста ответа на существующую заявку
+        </p>
+        <div class="bg-light rounded p-3 mb-3" style="border-left:4px solid #ffc107;">
+          <p class="text-muted mb-0 small">
+            <i class="bi bi-info-circle text-warning"></i> 
+            Вы уже подали заявку на это животное. Проверьте статус заявки в своем профиле
+          </p>
+        </div>
+        <div class="d-flex gap-2 justify-content-center mt-4">
+          <a class="btn btn-primary" href="/accounts/profile/?tab=applications" style="border-radius:10px;">
+            <i class="bi bi-person-circle"></i> Перейти в профиль
+          </a>
+          <a class="btn btn-outline-secondary" href="/animals/catalog/" style="border-radius:10px;">
+            <i class="bi bi-search"></i> Посмотреть других питомцев
+          </a>
+        </div>
+      </div>
+      <div class="modal-footer border-0 justify-content-center pb-4">
+        <button type="button" class="btn btn-warning px-5 fw-semibold" data-bs-dismiss="modal" style="border-radius:10px; box-shadow:0 4px 12px rgba(255, 193, 7, 0.3);">
+          Понятно
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно: нужно заполнить профиль -->
+<div id="profileIncompleteModal" class="modal fade" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg" style="border-radius:20px; overflow:hidden; border:none;">
+      <div class="modal-header border-0 text-center d-block" style="background:linear-gradient(135deg, #FFF7EF 0%, #FFE8D6 100%); padding:2rem 1.5rem 1rem;">
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="mb-3">
+          <div style="width:80px; height:80px; margin:0 auto; background:linear-gradient(135deg, #0d6efd 0%, #4dabf7 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(13, 110, 253, 0.25);">
+            <i class="bi bi-person-lines-fill text-white" style="font-size: 42px;"></i>
+          </div>
+        </div>
+        <h4 class="modal-title fw-bold mb-2" style="color:#2b1d16;">Заполните профиль</h4>
+      </div>
+      <div class="modal-body text-center py-4 px-4">
+        <p class="lead mb-3" style="color:#2b1d16; font-size:1.1rem;">
+          Чтобы подать заявку, нужно указать <strong>адрес</strong> и <strong>дату рождения</strong> в профиле.
+        </p>
+        <div id="profileIncompleteMissing" class="bg-light rounded p-3 mb-3" style="border-left:4px solid #0d6efd;">
+          <p class="text-muted mb-0 small">
+            <i class="bi bi-info-circle text-primary"></i>
+            Заполните недостающие поля и попробуйте снова.
+          </p>
+        </div>
+        <div class="d-flex gap-2 justify-content-center mt-4 flex-wrap">
+          <a class="btn btn-primary" href="/accounts/profile/" style="border-radius:10px;">
+            <i class="bi bi-person-circle"></i> Перейти в профиль
+          </a>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" style="border-radius:10px;">
+            Позже
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer border-0 justify-content-center pb-4">
+        <button type="button" class="btn btn-primary px-5 fw-semibold" data-bs-dismiss="modal" style="border-radius:10px; box-shadow:0 4px 12px rgba(13, 110, 253, 0.25);">
+          Понятно
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let appModal;
+  let adoptedModal;
+  let adminManagerModal;
+  let successModal;
+  let existingApplicationModal;
+  let profileIncompleteModal;
+  document.addEventListener('DOMContentLoaded', function(){
+    const appModalEl = document.getElementById('appModal');
+    if (appModalEl) {
+      appModal = new bootstrap.Modal(appModalEl);
+    }
+    const successModalEl = document.getElementById('successModal');
+    if (successModalEl) {
+      successModal = new bootstrap.Modal(successModalEl);
+    }
+    const existingApplicationModalEl = document.getElementById('existingApplicationModal');
+    if (existingApplicationModalEl) {
+      existingApplicationModal = new bootstrap.Modal(existingApplicationModalEl);
+    }
+    const profileIncompleteModalEl = document.getElementById('profileIncompleteModal');
+    if (profileIncompleteModalEl) {
+      profileIncompleteModal = new bootstrap.Modal(profileIncompleteModalEl);
+    }
+    {% if is_admin_or_manager %}
+    const adminManagerModalEl = document.getElementById('adminManagerModal');
+    if (adminManagerModalEl) {
+      adminManagerModal = new bootstrap.Modal(adminManagerModalEl);
+    }
+    {% elif has_approved_application %}
+    const adoptedModalEl = document.getElementById('adoptedModal');
+    if (adoptedModalEl) {
+      adoptedModal = new bootstrap.Modal(adoptedModalEl);
+    }
+    {% endif %}
+  });
+  function openApp(){ 
+    {% if not auth_user %}
+      // Пользователь не авторизован - показываем модальное окно авторизации
+      if (typeof showAuthRequiredModal === 'function') {
+        showAuthRequiredModal();
+      }
+    {% else %}
+      // Пользователь авторизован - показываем форму заявки
+      if (appModal) {
+        appModal.show(); 
+      }
+    {% endif %}
+  }
+  {% if is_admin_or_manager %}
+  function showAdminManagerModal(){ 
+    if (adminManagerModal) {
+      adminManagerModal.show(); 
+    }
+  }
+  {% elif has_approved_application %}
+  function showAdoptedModal(){ 
+    if (adoptedModal) {
+      adoptedModal.show(); 
+    }
+  }
+  {% endif %}
+  function validateApplication(){
+    var reason = document.getElementById('appReason');
+    var experience = document.getElementById('appExp');
+    var housing = document.getElementById('appHouse');
+    var isValid = true;
+    
+    if(!reason || !reason.value.trim()){
+      reason.classList.add('is-invalid');
+      isValid = false;
+    } else {
+      reason.classList.remove('is-invalid');
+    }
+    
+    if(!experience || !experience.value.trim()){
+      experience.classList.add('is-invalid');
+      isValid = false;
+    } else {
+      experience.classList.remove('is-invalid');
+    }
+    
+    if(!housing || !housing.value.trim()){
+      housing.classList.add('is-invalid');
+      isValid = false;
+    } else {
+      housing.classList.remove('is-invalid');
+    }
+    
+    if(!isValid){
+      var firstInvalid = document.querySelector('#applicationForm .is-invalid');
+      if(firstInvalid) firstInvalid.focus();
+      return false;
+    }
+    
+    return true;
+  }
+  function submitApplication(event) {
+    event.preventDefault();
+    
+    if (!validateApplication()) {
+      return false;
+    }
+    
+    const form = document.getElementById('applicationForm');
+    const submitBtn = document.getElementById('submitAppBtn');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const spinner = submitBtn.querySelector('.spinner-border');
+    const formData = new FormData(form);
+    
+    // Показываем индикатор загрузки
+    submitBtn.disabled = true;
+    btnText.textContent = 'Отправка...';
+    spinner.classList.remove('d-none');
+    
+    // Отправляем AJAX запрос
+    fetch('/animals/apply/', {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: formData
+    })
+    .then(response => {
+      // Проверяем статус ответа
+      if (response.status === 401) {
+        // Неавторизован - показываем модальное окно
+        if (appModal) {
+          appModal.hide();
+        }
+        if (typeof showAuthRequiredModal === 'function') {
+          showAuthRequiredModal();
+        }
+        submitBtn.disabled = false;
+        btnText.textContent = 'Отправить заявку';
+        spinner.classList.add('d-none');
+        return null;
+      }
+      return response.json().then(data => ({ data, status: response.status }));
+    })
+    .then(result => {
+      if (!result) return; // Если был 401, result будет null
+      
+      const { data, status } = result;
+      
+      if (data.success) {
+        // Закрываем модальное окно формы
+        if (appModal) {
+          appModal.hide();
+        }
+        // Очищаем форму
+        form.reset();
+        // Показываем модальное окно успеха
+        if (successModal) {
+          successModal.show();
+        }
+      } else {
+        // Проверяем тип ошибки
+        if (data.error && (data.error.includes('авторизация') || data.error.includes('Требуется авторизация') || status === 401)) {
+          // Закрываем модальное окно заявки
+          if (appModal) {
+            appModal.hide();
+          }
+          // Показываем модальное окно авторизации
+          if (typeof showAuthRequiredModal === 'function') {
+            showAuthRequiredModal();
+          }
+        } else {
+          // Проверяем, является ли это ошибкой существующей заявки
+          if (data.error && (data.error.includes('уже есть заявка') || data.error.includes('существующую заявку'))) {
+            // Закрываем модальное окно заявки
+            if (appModal) {
+              appModal.hide();
+            }
+            // Показываем модальное окно ошибки существующей заявки
+            if (existingApplicationModal) {
+              existingApplicationModal.show();
+            }
+          } else if (data.error_code === 'profile_incomplete') {
+            // Закрываем модальное окно заявки
+            if (appModal) {
+              appModal.hide();
+            }
+            // Поясняем, какие поля не заполнены
+            try {
+              const box = document.getElementById('profileIncompleteMissing');
+              if (box) {
+                const missing = Array.isArray(data.missing_fields) ? data.missing_fields : [];
+                const labels = [];
+                if (missing.includes('home_address')) labels.push('адрес');
+                if (missing.includes('date_of_birth')) labels.push('дата рождения');
+                const txt = labels.length ? `Не заполнено: ${labels.join(', ')}.` : 'Заполните недостающие поля и попробуйте снова.';
+                box.innerHTML = `
+                  <p class="text-muted mb-0 small">
+                    <i class="bi bi-info-circle text-primary"></i>
+                    ${txt}
+                  </p>
+                `;
+              }
+            } catch (e) {}
+            if (profileIncompleteModal) {
+              profileIncompleteModal.show();
+            } else {
+              alert(data.error || 'Заполните профиль');
+            }
+          } else {
+            // Для других ошибок показываем alert
+            alert(data.error || 'Произошла ошибка при отправке заявки');
+          }
+        }
+        submitBtn.disabled = false;
+        btnText.textContent = 'Отправить заявку';
+        spinner.classList.add('d-none');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Произошла ошибка при отправке заявки. Попробуйте еще раз.');
+      submitBtn.disabled = false;
+      btnText.textContent = 'Отправить заявку';
+      spinner.classList.add('d-none');
+    });
+    
+    return false;
+  }
+  
+  // Функция для проверки авторизации перед пожертвованием
+  function checkAuthBeforeDonation(event, link) {
+    // Проверяем авторизацию через cookie или localStorage
+    // Если пользователь не авторизован, показываем модальное окно
+    {% if not auth_user %}
+      event.preventDefault();
+      if (typeof showAuthRequiredModal === 'function') {
+        showAuthRequiredModal();
+      }
+      return false;
+    {% endif %}
+    return true;
+  }
+  
+  // Функция для извлечения YouTube ID из различных форматов URL
+  function extractYouTubeId(url) {
+    if (!url) return null;
+    
+    // Различные форматы YouTube URL
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+      /youtube\.com\/.*[?&]v=([^&\n?#]+)/,
+    ];
+    
+    for (let pattern of patterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+    
+    return null;
+  }
+  
+  // Функция для создания правильного embed URL для YouTube
+  function createYouTubeEmbedUrl(url) {
+    const videoId = extractYouTubeId(url);
+    if (videoId) {
+      // Упрощенные параметры для избежания ошибки 153
+      // autoplay может не работать без взаимодействия пользователя, но пробуем
+      return `https://www.youtube.com/embed/${videoId}?mute=1&controls=0&playsinline=1&rel=0&modestbranding=1`;
+    }
+    return null;
+  }
+  
+  // Функция для определения MIME типа видео по URL
+  function getVideoMimeType(url) {
+    if (!url) return 'video/mp4';
+    const urlLower = url.toLowerCase();
+    if (urlLower.includes('.mp4')) return 'video/mp4';
+    if (urlLower.includes('.webm')) return 'video/webm';
+    if (urlLower.includes('.ogg') || urlLower.includes('.ogv')) return 'video/ogg';
+    if (urlLower.includes('.mov')) return 'video/quicktime';
+    if (urlLower.includes('.avi')) return 'video/x-msvideo';
+    // По умолчанию mp4
+    return 'video/mp4';
+  }
+  
+  // Функция для инициализации видео элементов
+  function initializeVideoElements() {
+    const videoItems = document.querySelectorAll('[data-video-url]');
+    videoItems.forEach(function(item) {
+      const videoUrl = item.getAttribute('data-video-url');
+      const container = item.querySelector('[id^="video-container-"]');
+      if (!container || container.innerHTML.trim() !== '') {
+        return; // Уже инициализировано
+      }
+      
+      // Функция для извлечения Rutube ID
+      function extractRutubeId(url) {
+        if (!url) return null;
+        // Различные форматы Rutube URL
+        // https://rutube.ru/video/{id}/
+        // https://rutube.ru/shorts/{id}/
+        // https://rutube.ru/play/embed/{id}
+        const patterns = [
+          /rutube\.ru\/video\/([^\/\?]+)/,
+          /rutube\.ru\/shorts\/([^\/\?]+)/,
+          /rutube\.ru\/play\/embed\/([^\/\?]+)/,
+        ];
+        
+        for (let pattern of patterns) {
+          const match = url.match(pattern);
+          if (match && match[1]) {
+            return match[1];
+          }
+        }
+        
+        return null;
+      }
+      
+      // Функция для создания Rutube embed URL
+      function createRutubeEmbedUrl(url) {
+        const videoId = extractRutubeId(url);
+        if (videoId) {
+          // Добавляем параметры для автозапуска: autoplay=1, mute=1 (для обхода блокировки браузера), controls=0 (скрыть контролы)
+          return `https://rutube.ru/play/embed/${videoId}?autoplay=1&mute=1&controls=0&loop=0`;
+        }
+        return null;
+      }
+      
+      // Проверяем тип видео
+      if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+        // YouTube видео
+        const embedUrl = createYouTubeEmbedUrl(videoUrl);
+        if (embedUrl) {
+          const iframe = document.createElement('iframe');
+          iframe.className = 'w-100 h-100';
+          iframe.style.border = 'none';
+          iframe.src = embedUrl;
+          iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture');
+          iframe.setAttribute('allowfullscreen', '');
+          iframe.setAttribute('frameborder', '0');
+          
+          // Обработка ошибок загрузки iframe
+          iframe.addEventListener('error', function() {
+            console.error('Ошибка загрузки YouTube iframe');
+            container.innerHTML = '<div class="text-white p-4 text-center"><i class="bi bi-exclamation-triangle-fill mb-3" style="font-size: 3rem;"></i><p class="mb-0">Ошибка загрузки YouTube видео</p><p class="small mb-0 mt-2">Проверьте URL</p></div>';
+          });
+          
+          container.appendChild(iframe);
+        } else {
+          container.innerHTML = '<div class="text-white p-4 text-center"><i class="bi bi-exclamation-triangle-fill mb-3" style="font-size: 3rem;"></i><p class="mb-0">Не удалось распознать YouTube URL</p></div>';
+        }
+      } else if (videoUrl.includes('rutube.ru')) {
+        // Rutube видео
+        const embedUrl = createRutubeEmbedUrl(videoUrl);
+        if (embedUrl) {
+          console.log('Создание Rutube iframe с URL:', embedUrl);
+          const iframe = document.createElement('iframe');
+          iframe.className = 'w-100 h-100';
+          iframe.style.border = 'none';
+          iframe.src = embedUrl;
+          iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
+          iframe.setAttribute('allowfullscreen', '');
+          iframe.setAttribute('frameborder', '0');
+          iframe.setAttribute('loading', 'lazy');
+          
+          // Пытаемся принудительно запустить видео после загрузки iframe
+          iframe.addEventListener('load', function() {
+            console.log('Rutube iframe загружен, проверяем автозапуск');
+            // Rutube должен автоматически запустить видео с параметром autoplay=1
+            // Если автозапуск не работает, это может быть из-за политики браузера
+            // В этом случае пользователю нужно будет кликнуть на видео для запуска
+            
+            // Пробуем отправить сообщение в iframe для запуска (если поддерживается)
+            setTimeout(function() {
+              try {
+                // Пробуем разные форматы сообщений для Rutube
+                iframe.contentWindow.postMessage({method: 'play'}, '*');
+                iframe.contentWindow.postMessage('play', '*');
+                console.log('Отправлены сообщения для запуска видео');
+              } catch (e) {
+                console.log('Не удалось отправить сообщение в iframe (это нормально, может быть заблокировано политикой безопасности):', e);
+              }
+            }, 500);
+          });
+          
+          // Обработка ошибок загрузки iframe
+          iframe.addEventListener('error', function() {
+            console.error('Ошибка загрузки Rutube iframe');
+            container.innerHTML = '<div class="text-white p-4 text-center"><i class="bi bi-exclamation-triangle-fill mb-3" style="font-size: 3rem;"></i><p class="mb-0">Ошибка загрузки Rutube видео</p><p class="small mb-0 mt-2">Проверьте URL</p></div>';
+          });
+          
+          container.appendChild(iframe);
+        } else {
+          console.error('Не удалось извлечь Rutube ID из URL:', videoUrl);
+          container.innerHTML = '<div class="text-white p-4 text-center"><i class="bi bi-exclamation-triangle-fill mb-3" style="font-size: 3rem;"></i><p class="mb-0">Не удалось распознать Rutube URL</p><p class="small mb-0 mt-2">Проверьте формат ссылки</p></div>';
+        }
+      } else if (videoUrl.includes('vk.com') || videoUrl.includes('vkontakte.ru')) {
+        // VK видео
+        const iframe = document.createElement('iframe');
+        iframe.className = 'w-100 h-100';
+        iframe.style.border = 'none';
+        iframe.src = videoUrl;
+        iframe.setAttribute('allow', 'autoplay; encrypted-media');
+        iframe.setAttribute('allowfullscreen', '');
+        container.appendChild(iframe);
+      } else {
+        // Обычное видео файл (без controls)
+        console.log('Инициализация видео файла:', videoUrl);
+        
+        // Показываем индикатор загрузки
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center text-white';
+        loadingDiv.style.background = 'rgba(0,0,0,0.5)';
+        loadingDiv.style.zIndex = '5';
+        loadingDiv.innerHTML = '<div class="spinner-border text-warning" role="status"><span class="visually-hidden">Загрузка...</span></div>';
+        container.appendChild(loadingDiv);
+        
+        // Преобразуем относительный URL в абсолютный, если нужно
+        let absoluteVideoUrl = videoUrl;
+        if (videoUrl.startsWith('/')) {
+          // Относительный URL - преобразуем в абсолютный
+          absoluteVideoUrl = window.location.origin + videoUrl;
+          console.log('Преобразован URL:', videoUrl, '→', absoluteVideoUrl);
+        }
+        
+        // Сначала проверяем доступность файла
+        fetch(absoluteVideoUrl, { method: 'HEAD' })
+          .then(function(response) {
+            console.log('✓ Проверка доступности файла:', response.status, response.statusText);
+            if (!response.ok) {
+              throw new Error('Файл недоступен: ' + response.status + ' ' + response.statusText);
+            }
+            const contentType = response.headers.get('Content-Type');
+            console.log('  - Content-Type:', contentType);
+            const contentLength = response.headers.get('Content-Length');
+            if (contentLength) {
+              const sizeMB = (parseInt(contentLength) / (1024 * 1024)).toFixed(2);
+              console.log('  - Размер файла:', sizeMB, 'MB');
+            }
+            
+            // Если файл доступен, создаем video элемент
+            initializeVideoElement(absoluteVideoUrl);
+          })
+          .catch(function(error) {
+            console.error('✗ Ошибка при проверке файла:', error);
+            console.error('  - Пробуем использовать оригинальный URL:', videoUrl);
+            // Пробуем с оригинальным URL на случай, если проблема с абсолютным
+            initializeVideoElement(videoUrl);
+          });
+        
+        function initializeVideoElement(finalVideoUrl) {
+          console.log('Создание video элемента с URL:', finalVideoUrl);
+          
+          const video = document.createElement('video');
+          video.className = 'w-100 h-100';
+          video.setAttribute('autoplay', '');
+          video.setAttribute('muted', '');
+          video.setAttribute('playsinline', '');
+          video.setAttribute('loop', '');
+          video.style.objectFit = 'contain';
+          video.style.backgroundColor = '#000';
+          video.setAttribute('preload', 'auto');
+          video.setAttribute('crossorigin', 'anonymous');
+          
+          // Определяем правильный MIME тип по расширению файла
+          const mimeType = getVideoMimeType(finalVideoUrl);
+          console.log('Определен MIME тип:', mimeType, 'для URL:', finalVideoUrl);
+          
+          // Пробуем несколько вариантов загрузки
+          const source = document.createElement('source');
+          source.src = finalVideoUrl;
+          source.type = mimeType;
+          video.appendChild(source);
+          
+          // Также пробуем установить src напрямую на video элемент
+          video.src = finalVideoUrl;
+          
+          video.textContent = 'Ваш браузер не поддерживает видео.';
+          
+          // Добавляем video в DOM сразу, чтобы он мог начать загрузку
+          container.appendChild(video);
+        
+          // Обработка всех событий для отладки
+          video.addEventListener('loadstart', function() {
+            console.log('✓ Начало загрузки видео:', videoUrl);
+          });
+          
+          video.addEventListener('loadedmetadata', function() {
+            console.log('✓ Метаданные видео загружены:', videoUrl);
+            console.log('  - Длительность:', video.duration, 'сек');
+            console.log('  - Разрешение:', video.videoWidth, 'x', video.videoHeight);
+            loadingDiv.remove();
+            
+            // Пытаемся запустить после загрузки метаданных
+            const playPromise = video.play();
+            if (playPromise !== undefined) {
+              playPromise.then(function() {
+                console.log('✓ Видео успешно запущено автоматически');
+              }).catch(function(error) {
+                console.warn('⚠ Не удалось запустить видео автоматически:', error.name, error.message);
+                // Если autoplay не работает, добавляем обработчик клика для запуска
+                video.style.cursor = 'pointer';
+                const playOverlay = document.createElement('div');
+                playOverlay.className = 'position-absolute top-50 start-50 translate-middle text-white text-center';
+                playOverlay.style.zIndex = '10';
+                playOverlay.style.pointerEvents = 'none';
+                playOverlay.innerHTML = '<i class="bi bi-play-circle-fill" style="font-size: 4rem; opacity: 0.8;"></i><p class="mt-2 mb-0 small">Нажмите для воспроизведения</p>';
+                container.appendChild(playOverlay);
+                
+                const clickHandler = function() {
+                  video.play().then(function() {
+                    console.log('✓ Видео запущено по клику');
+                    playOverlay.remove();
+                    video.removeEventListener('click', clickHandler);
+                    video.style.cursor = '';
+                  }).catch(function(err) {
+                    console.error('✗ Ошибка при запуске видео по клику:', err);
+                  });
+                };
+                video.addEventListener('click', clickHandler);
+              });
+            }
+          });
+          
+          video.addEventListener('loadeddata', function() {
+            console.log('✓ Данные видео загружены');
+            loadingDiv.remove();
+          });
+          
+          video.addEventListener('canplay', function() {
+            console.log('✓ Видео готово к воспроизведению');
+            loadingDiv.remove();
+          });
+          
+          video.addEventListener('canplaythrough', function() {
+            console.log('✓ Видео готово к воспроизведению без буферизации');
+            loadingDiv.remove();
+          });
+          
+          video.addEventListener('playing', function() {
+            console.log('✓ Видео воспроизводится');
+            loadingDiv.remove();
+          });
+          
+          video.addEventListener('waiting', function() {
+            console.log('⚠ Видео ожидает загрузки данных, readyState:', video.readyState);
+          });
+          
+          video.addEventListener('stalled', function() {
+            console.warn('⚠ Загрузка видео остановилась');
+          });
+          
+          video.addEventListener('progress', function() {
+            if (video.buffered.length > 0) {
+              const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+              const duration = video.duration;
+              if (duration > 0) {
+                const percent = (bufferedEnd / duration * 100).toFixed(1);
+                console.log('📊 Загружено:', percent + '%');
+              }
+            }
+          });
+          
+          // Обработка ошибок загрузки
+          video.addEventListener('error', function(e) {
+            console.error('✗ Ошибка загрузки видео файла:', videoUrl);
+            if (video.error) {
+              console.error('  - Код ошибки:', video.error.code);
+              console.error('  - Сообщение:', video.error.message);
+              // Коды ошибок: 1=MEDIA_ERR_ABORTED, 2=MEDIA_ERR_NETWORK, 3=MEDIA_ERR_DECODE, 4=MEDIA_ERR_SRC_NOT_SUPPORTED
+              const errorMessages = {
+                1: 'Загрузка прервана',
+                2: 'Ошибка сети при загрузке',
+                3: 'Ошибка декодирования видео',
+                4: 'Формат видео не поддерживается'
+              };
+              const errorMsg = errorMessages[video.error.code] || 'Неизвестная ошибка';
+              console.error('  - Описание:', errorMsg);
+            }
+            console.error('  - Событие:', e);
+            console.error('  - readyState:', video.readyState);
+            console.error('  - networkState:', video.networkState);
+            
+            loadingDiv.remove();
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'd-flex flex-column align-items-center justify-content-center h-100 text-white p-4';
+            let errorText = 'Не удалось загрузить видео';
+            if (video.error) {
+              const errorMessages = {
+                1: 'Загрузка прервана',
+                2: 'Ошибка сети при загрузке',
+                3: 'Ошибка декодирования видео',
+                4: 'Формат видео не поддерживается'
+              };
+              errorText = errorMessages[video.error.code] || errorText;
+            }
+            errorDiv.innerHTML = '<i class="bi bi-exclamation-triangle-fill mb-3" style="font-size: 3rem;"></i><p class="mb-0">' + errorText + '</p><p class="small mb-0 mt-2">Проверьте формат файла и путь</p><p class="small mb-0 mt-1 text-muted">URL: ' + videoUrl.substring(0, 50) + '...</p>';
+            container.innerHTML = '';
+            container.appendChild(errorDiv);
+          });
+          
+          // Если видео не загружается в течение 10 секунд, показываем сообщение
+          let loadTimeout = setTimeout(function() {
+            if (video.readyState === 0 || video.readyState === 1) {
+              console.warn('⚠ Видео не загружается в течение 10 секунд');
+              console.warn('  - readyState:', video.readyState, '(0=HAVE_NOTHING, 1=HAVE_METADATA, 2=HAVE_CURRENT_DATA, 3=HAVE_FUTURE_DATA, 4=HAVE_ENOUGH_DATA)');
+              console.warn('  - networkState:', video.networkState, '(0=EMPTY, 1=IDLE, 2=LOADING, 3=NO_SOURCE)');
+              if (loadingDiv.parentNode) {
+                loadingDiv.innerHTML = '<div class="text-center"><i class="bi bi-exclamation-triangle-fill mb-3" style="font-size: 3rem;"></i><p class="mb-0">Видео загружается медленно</p><p class="small mb-0 mt-2">Проверьте подключение к интернету</p><p class="small mb-0 mt-1">Попробуйте обновить страницу</p></div>';
+              }
+            }
+          }, 10000);
+          
+          video.addEventListener('loadeddata', function() {
+            clearTimeout(loadTimeout);
+          });
+          
+          video.addEventListener('canplay', function() {
+            clearTimeout(loadTimeout);
+          });
+          
+          // Принудительно пытаемся загрузить видео
+          // Вызываем load() после добавления в DOM
+          setTimeout(function() {
+            console.log('Принудительная загрузка видео, readyState:', video.readyState, 'networkState:', video.networkState);
+            video.load();
+            
+            // Если через 2 секунды все еще не загружается, пробуем другой подход
+            setTimeout(function() {
+              if (video.readyState === 0 && video.networkState === 0) {
+                console.warn('⚠ Видео не начало загрузку, пробуем альтернативный метод');
+                // Пробуем удалить source и добавить заново
+                video.innerHTML = '';
+                const newSource = document.createElement('source');
+                newSource.src = finalVideoUrl;
+                newSource.type = mimeType;
+                video.appendChild(newSource);
+                video.load();
+              }
+            }, 2000);
+          }, 100);
+        }
+      }
+    });
+  }
+  
+  // Инициализация карусели медиа-файлов
+  document.addEventListener('DOMContentLoaded', function() {
+    // Инициализируем видео элементы
+    initializeVideoElements();
+    
+    const carouselElement = document.getElementById('animalMediaCarousel');
+    if (carouselElement) {
+      // Инициализируем карусель Bootstrap без автоматической прокрутки
+      const carousel = new bootstrap.Carousel(carouselElement, {
+        interval: false, // Отключаем автоматическую прокрутку
+        wrap: true, // Зацикливаем карусель
+        keyboard: true, // Разрешаем навигацию с клавиатуры
+        pause: 'hover' // Пауза при наведении (если бы была автопрокрутка)
+      });
+      
+      // Обработка переключения слайдов для видео
+      carouselElement.addEventListener('slid.bs.carousel', function(event) {
+        // Останавливаем все видео
+        const allVideos = carouselElement.querySelectorAll('video');
+        allVideos.forEach(function(video) {
+          video.pause();
+          video.currentTime = 0;
+        });
+        
+        // Запускаем видео на активном слайде
+        const activeSlide = event.relatedTarget;
+        if (activeSlide) {
+          const video = activeSlide.querySelector('video');
+          if (video) {
+            // Пытаемся запустить видео
+            video.play().then(function() {
+              console.log('Видео успешно запущено');
+            }).catch(function(error) {
+              console.warn('Не удалось запустить видео автоматически:', error);
+              // Если автозапуск не работает, показываем сообщение
+              if (error.name === 'NotAllowedError') {
+                console.log('Автозапуск заблокирован браузером, пользователь может запустить вручную');
+              }
+            });
+          }
+        }
+      });
+      
+      // Запускаем видео на первом слайде, если он активен
+      const firstActiveSlide = carouselElement.querySelector('.carousel-item.active');
+      if (firstActiveSlide) {
+        const firstVideo = firstActiveSlide.querySelector('video');
+        if (firstVideo) {
+          firstVideo.play().catch(function(error) {
+            console.log('Автозапуск первого видео заблокирован:', error);
+          });
+        }
+      }
+    }
+    
+    // Обработка ошибок загрузки изображений
+    const carouselImages = document.querySelectorAll('#animalMediaCarousel img');
+    carouselImages.forEach(function(img) {
+      img.addEventListener('error', function() {
+        // Если изображение не загрузилось, показываем placeholder
+        if (this.src && !this.src.includes('no-photo.png')) {
+          console.warn('Не удалось загрузить изображение:', this.src);
+          this.src = '{% static "no-photo.png" %}';
+          this.onerror = null; // Предотвращаем бесконечный цикл
+        }
+      });
+      
+      // Добавляем loading="lazy" для оптимизации
+      img.setAttribute('loading', 'lazy');
+    });
+    
+    // Обработка ошибок загрузки видео
+    const carouselVideos = document.querySelectorAll('#animalMediaCarousel video');
+    carouselVideos.forEach(function(video) {
+      video.addEventListener('error', function(e) {
+        console.error('Ошибка загрузки видео:', this.src, e);
+        // Показываем сообщение об ошибке
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'd-flex flex-column align-items-center justify-content-center h-100 text-white p-4';
+        errorDiv.innerHTML = '<i class="bi bi-exclamation-triangle-fill mb-3" style="font-size: 3rem;"></i><p class="mb-0">Не удалось загрузить видео</p><p class="small mb-0 mt-2">Проверьте URL или формат файла</p>';
+        this.parentElement.appendChild(errorDiv);
+        this.style.display = 'none';
+      });
+      
+      video.addEventListener('loadedmetadata', function() {
+        console.log('Метаданные видео загружены:', this.src);
+      });
+      
+      video.addEventListener('canplay', function() {
+        console.log('Видео готово к воспроизведению:', this.src);
+      });
+      
+      // Если видео не может загрузиться, пробуем загрузить принудительно
+      video.addEventListener('loadstart', function() {
+        console.log('Начало загрузки видео:', this.src);
+      });
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% load tz %}
+{% block title %}Мои заявки — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-3">Мои заявки</h2>
+  {% if applications %}
+  <div class="list-group">
+    {% for a in applications %}
+    <div class="list-group-item d-flex justify-content-between align-items-center">
+      <div>
+        <div class="fw-semibold">{{ a.animal }}</div>
+        <div class="text-muted small">{{ a.date|localtime|date:'d.m.Y H:i' }}</div>
+      </div>
+      <span class="badge bg-info">{{ a.status }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    <p class="text-muted">Ваш список заявок пуст.</p>
+  {% endif %}
+</div>
+{% endblock %}

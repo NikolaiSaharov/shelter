@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% load tz %}
+{% block title %}Заявки на усыновление — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Заявки на усыновление</h2>
+  </div>
+
+  <form method="get" class="card mb-4" style="background:#FFF7EF; border-radius:16px;">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">Поиск</label>
+          <input type="text" class="form-control" name="q" value="{{ search_query }}" placeholder="Животное, имя, email">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small fw-semibold">Статус</label>
+          <select name="status" class="form-select">
+            <option value="">Все статусы</option>
+            <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>В ожидании</option>
+            <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Одобрено</option>
+            <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Отклонено</option>
+          </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">Поиск</button>
+        </div>
+      </div>
+      {% if search_query or status_filter %}
+        <div class="mt-2">
+          <a href="{% url 'applications_manager_list' %}" class="btn btn-sm btn-outline-secondary">Сбросить фильтры</a>
+        </div>
+      {% endif %}
+    </div>
+  </form>
+
+  <div class="row g-4">
+    {% for app in applications %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm border-0" style="border-radius:16px; transition:transform 0.2s;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <div class="text-muted small">Заявка #{{ app.id }}</div>
+              <div class="fw-bold mt-1">{{ app.animal_name }}</div>
+            </div>
+            <span class="badge bg-{{ app.status_class }} rounded-pill">{{ app.status }}</span>
+          </div>
+          
+          <div class="mb-3">
+            <div class="text-muted small mb-1">Пользователь</div>
+            <div class="fw-semibold">{{ app.user_name }}</div>
+            <div class="text-muted small">{{ app.email }}</div>
+          </div>
+          
+          <div class="mb-3">
+            <div class="text-muted small mb-1">Причина</div>
+            <div class="small">{{ app.reason|truncatewords:15 }}</div>
+          </div>
+          
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="text-muted small">{{ app.date|localtime|date:'d.m.Y H:i' }}</div>
+            <a href="{% url 'application_manager_detail' app.id %}" class="btn btn-sm btn-outline-primary">
+              Подробнее
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-inbox" style="font-size:3rem;"></i>
+        <div class="mt-2">Заявки не найдены</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Пагинация -->
+  {% if page_obj.has_other_pages %}
+  <nav aria-label="Навигация по страницам" class="mt-4">
+    <ul class="pagination justify-content-center mb-0">
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}page=1" aria-label="Первая">
+            <i class="bi bi-chevron-double-left"></i>
+          </a>
+        </li>
+        <li class="page-item">
+          <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ page_obj.previous_page_number }}" aria-label="Предыдущая">
+            <i class="bi bi-chevron-left"></i>
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link"><i class="bi bi-chevron-double-left"></i></span>
+        </li>
+        <li class="page-item disabled">
+          <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+        </li>
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+          <li class="page-item active">
+            <span class="page-link">{{ num }}</span>
+          </li>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+          <li class="page-item">
+            <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ num }}">{{ num }}</a>
+          </li>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ page_obj.next_page_number }}" aria-label="Следующая">
+            <i class="bi bi-chevron-right"></i>
+          </a>
+        </li>
+        <li class="page-item">
+          <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ page_obj.paginator.num_pages }}" aria-label="Последняя">
+            <i class="bi bi-chevron-double-right"></i>
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+        </li>
+        <li class="page-item disabled">
+          <span class="page-link"><i class="bi bi-chevron-double-right"></i></span>
+        </li>
+      {% endif %}
+    </ul>
+    <div class="text-center mt-2 text-muted small">
+      Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }} (всего {{ page_obj.paginator.count }} записей)
+    </div>
+  </nav>
+  {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const searchInput = document.querySelector('input[name="q"]');
+  const resetLink = document.querySelector('a[href*="applications_manager_list"]');
+  
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+      return;
+    }
+    
+    if (e.key === '/' || e.key === 'Slash' || e.code === 'Slash') {
+      e.preventDefault();
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select();
+      }
+    }
+    
+    if (e.key === 'Escape' || e.key === 'Esc') {
+      if (resetLink) {
+        e.preventDefault();
+        resetLink.click();
+      }
+    }
+  });
+});
+</script>
+{% endblock %}
+

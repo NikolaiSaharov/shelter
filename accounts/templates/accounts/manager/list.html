@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load role_extras %}
+{% load tz %}
+{% block title %}Просмотр пользователей — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Просмотр пользователей</h2>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Фильтры и поиск -->
+  <form method="get" class="card mb-4" style="background:#FFF7EF; border-radius:16px;">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">Поиск</label>
+          <input type="text" class="form-control" name="q" value="{{ q }}" placeholder="Email, имя, фамилия, телефон">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small fw-semibold">Роль</label>
+          <select name="role" class="form-select">
+            <option value="">Все роли</option>
+            {% for role in roles %}
+              <option value="{{ role.role_id }}" {% if role_filter == role.role_id|stringformat:"s" %}selected{% endif %}>
+                {{ role.role_name|role_display }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">Поиск</button>
+        </div>
+      </div>
+      {% if q or role_filter %}
+        <div class="mt-2">
+          <a href="{% url 'user_manager_list' %}" class="btn btn-sm btn-outline-secondary">Сбросить фильтры</a>
+        </div>
+      {% endif %}
+    </div>
+  </form>
+
+  <!-- Таблица пользователей -->
+  <div class="card shadow-sm" style="border-radius:16px; overflow:hidden;">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead style="background:#FFF7EF;">
+          <tr>
+            <th style="width:60px;">ID</th>
+            <th>ФИО</th>
+            <th>Email</th>
+            <th>Телефон</th>
+            <th>Роль</th>
+            <th style="width:150px;">Дата регистрации</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+          <tr>
+            <td class="align-middle">{{ user.user_id }}</td>
+            <td class="align-middle">
+              <div class="fw-semibold">{{ user.first_name }} {{ user.last_name }}</div>
+              {% if user.middle_name %}
+                <div class="text-muted small">{{ user.middle_name }}</div>
+              {% endif %}
+            </td>
+            <td class="align-middle">{{ user.email }}</td>
+            <td class="align-middle">{{ user.phone }}</td>
+            <td class="align-middle">
+              <span class="badge {{ user.role.role_name|role_badge_class }}">
+                {{ user.role.role_name|role_display }}
+              </span>
+            </td>
+            <td class="align-middle">
+              <div class="small">{{ user.registration_date|date:'d.m.Y' }}</div>
+              <div class="text-muted small">{{ user.registration_date|localtime|date:'H:i' }}</div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox" style="font-size:3rem;"></i>
+              <div class="mt-2">Пользователи не найдены</div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}Медицинские записи — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Медицинские записи</h2>
+    <a href="{% url 'medical_record_create' %}" class="btn btn-warning">
+      <i class="bi bi-plus-circle"></i> Добавить запись
+    </a>
+  </div>
+
+  <!-- Фильтры -->
+  <form method="get" class="card mb-4" style="background:#FFF7EF; border-radius:16px;">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Поиск</label>
+          <input type="text" class="form-control" name="q" value="{{ search_query }}" placeholder="Состояние, лечение, животное...">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Животное</label>
+          <select name="animal_id" class="form-select">
+            <option value="">Все животные</option>
+            {% for a in animals %}
+              <option value="{{ a.id }}" {% if animal_id == a.id|stringformat:"s" %}selected{% endif %}>{{ a.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Статус</label>
+          <select name="status" class="form-select">
+            <option value="">Все статусы</option>
+            <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>Активная</option>
+            <option value="Resolved" {% if status_filter == 'Resolved' %}selected{% endif %}>Решена</option>
+            <option value="Chronic" {% if status_filter == 'Chronic' %}selected{% endif %}>Хроническая</option>
+          </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">Применить</button>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <a href="{% url 'medical_records_list' %}" class="btn btn-outline-secondary w-100">Сброс</a>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <!-- Таблица записей -->
+  <div class="card shadow-sm" style="border-radius:16px; overflow:hidden;">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead style="background:#FFF7EF;">
+          <tr>
+            <th>Животное</th>
+            <th>Состояние</th>
+            <th>Дата диагностики</th>
+            <th>Лечение</th>
+            <th>Статус</th>
+            <th>Примечания</th>
+            <th style="width:150px;">Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+          <tr>
+            <td>
+              <a href="{% url 'animal_card_detail' r.animal_id %}" class="text-decoration-none">
+                {{ r.animal_name }}
+              </a>
+            </td>
+            <td><strong>{{ r.condition }}</strong></td>
+            <td>{% if r.diagnosis_date %}{{ r.diagnosis_date|date:"d.m.Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+            <td>{% if r.treatment %}{{ r.treatment|truncatechars:50 }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+            <td>
+              <span class="badge {% if r.status == 'Active' %}bg-danger{% elif r.status == 'Resolved' %}bg-success{% else %}bg-secondary{% endif %}">
+                {{ r.status }}
+              </span>
+            </td>
+            <td class="small text-muted">{% if r.notes %}{{ r.notes|truncatechars:50 }}{% else %}—{% endif %}</td>
+            <td>
+              <a href="{% url 'medical_record_update' r.id %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form method="post" action="{% url 'medical_record_delete' r.id %}" class="d-inline js-confirm-submit"
+                    data-confirm="Удалить медицинскую запись?"
+                    data-confirm-ok="Удалить">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox" style="font-size:3rem;"></i>
+              <div class="mt-2">Медицинские записи не найдены</div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+

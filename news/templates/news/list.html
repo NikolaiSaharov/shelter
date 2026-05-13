@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Новости</h2>
+    {% if auth_user.role == 'Admin' or auth_user.role == 'Manager' %}
+      <a class="btn btn-primary" href="/news/admin/create/">Создать новость</a>
+    {% endif %}
+  </div>
+  
+  <!-- Фильтр по приюту -->
+  {% if shelters %}
+  <div class="card mb-4 shadow-sm" style="border-radius:16px; background:#FFF7EF; border:none;">
+    <div class="card-body p-3">
+      <form method="get" class="d-flex align-items-center gap-3">
+        <label class="form-label fw-semibold mb-0">
+          <i class="bi bi-building"></i> Приют:
+        </label>
+        <select name="shelter" class="form-select" style="max-width: 300px;" onchange="this.form.submit()">
+          <option value="">Все приюты</option>
+          {% for shelter in shelters %}
+            <option value="{{ shelter.shelter_id }}" {% if request.GET.shelter == shelter.shelter_id|stringformat:'s' %}selected{% endif %}>{{ shelter.shelter_name }}</option>
+          {% endfor %}
+        </select>
+        {% if request.GET.shelter %}
+          <a href="{% url 'news_list' %}" class="btn btn-sm btn-outline-secondary">Сбросить</a>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+  {% endif %}
+  
+  <div class="row g-4">
+    {% for n in news_list %}
+    <div class="col-md-6 col-xl-4">
+      <a class="text-decoration-none text-reset" href="/news/{{ n.news_id }}/">
+        <div class="card h-100">
+          {% if n.image_path %}
+            <img src="{{ n.image_path }}" referrerpolicy="no-referrer" loading="lazy" decoding="async" class="card-img-top" alt="" onerror="this.style.display='none'">
+          {% endif %}
+          <div class="card-body">
+            <div class="text-muted small mb-1">{{ n.post_date|date:'d.m.Y' }}</div>
+            <h5 class="card-title">{{ n.title }}</h5>
+            <p class="card-text">{{ n.content|striptags|truncatechars:160 }}</p>
+          </div>
+        </div>
+      </a>
+    </div>
+    {% empty %}
+    <div class="col-12"><p class="lead">Пока новостей нет.</p></div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

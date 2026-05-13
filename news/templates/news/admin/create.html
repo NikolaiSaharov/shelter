@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% block title %}Создать новость — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Создать новость</h2>
+    <a href="{% url 'news_admin_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Назад к списку
+    </a>
+  </div>
+
+  <div class="card shadow-sm" style="border-radius:16px;">
+    <div class="card-body p-4">
+      {% if messages %}
+        {% for m in messages %}
+          {% if 'news_admin_create_page' in m.extra_tags %}
+            <script>
+              document.addEventListener('DOMContentLoaded', function() {
+                if (typeof showErrorModal === 'function') {
+                  showErrorModal('{{ m|escapejs }}');
+                }
+              });
+            </script>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+
+      <form method="post" enctype="multipart/form-data" onsubmit="return submitNews()">
+        {% csrf_token %}
+        
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Заголовок <span class="text-danger">*</span></label>
+          <input class="form-control" name="title" id="title" value="{{ title|default:'' }}" placeholder="Введите заголовок новости" required>
+        </div>
+
+        <div class="mb-2">
+          <label class="form-label fw-semibold">Содержимое <span class="text-danger">*</span></label>
+        </div>
+        <div class="border rounded-3 mb-0 px-2 py-2 bg-light d-flex flex-wrap gap-2" id="editorToolbar">
+          <button type="button" class="btn btn-sm btn-light border" title="Жирный" onclick="cmd('bold')"><strong>B</strong></button>
+          <button type="button" class="btn btn-sm btn-light border" title="Курсив" onclick="cmd('italic')"><em>I</em></button>
+          <button type="button" class="btn btn-sm btn-light border" title="Зачеркнутый" onclick="cmd('strikeThrough')"><s>S</s></button>
+          <div class="vr mx-1"></div>
+          <button type="button" class="btn btn-sm btn-light border" title="Маркированный список" onclick="cmd('insertUnorderedList')">•</button>
+          <button type="button" class="btn btn-sm btn-light border" title="Нумерованный список" onclick="cmd('insertOrderedList')">1.</button>
+          <div class="vr mx-1"></div>
+          <button type="button" class="btn btn-sm btn-light border" title="Цитата" onclick="wrapSelection('blockquote')">""</button>
+          <button type="button" class="btn btn-sm btn-light border" title="Код" onclick="wrapSelection('pre')">{ }</button>
+          <button type="button" class="btn btn-sm btn-light border" title="Изображение по URL" onclick="insertImageUrl()">🖼️</button>
+          <div class="vr mx-1"></div>
+          <button type="button" class="btn btn-sm btn-light border" title="Отменить" onclick="cmd('undo')">↶</button>
+          <button type="button" class="btn btn-sm btn-light border" title="Повторить" onclick="cmd('redo')">↷</button>
+        </div>
+        <div id="editor" class="border rounded-3 p-3 mb-3" style="min-height:300px; background:#fff;" contenteditable="true"></div>
+        <input type="hidden" name="content" id="contentHidden" required>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Превью изображение (URL)</label>
+            <input class="form-control" name="image_url" id="image_url" value="{{ image_url|default:'' }}" placeholder="https://example.com/image.jpg">
+            <div class="form-text">Можно указать URL изображения или загрузить файл</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">или Загрузить файл</label>
+            <input class="form-control" type="file" name="image_file" accept="image/*">
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Приют</label>
+          <select class="form-select" name="shelter_id">
+            <option value="">Не указан</option>
+            {% for shelter in shelters %}
+              <option value="{{ shelter.shelter_id }}">{{ shelter.shelter_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="is_published" id="is_published" 
+                   {% if is_published|default:True %}checked{% endif %}>
+            <label class="form-check-label" for="is_published">
+              Опубликовать сразу
+            </label>
+          </div>
+        </div>
+
+        <hr>
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'news_admin_list' %}" class="btn btn-outline-secondary">Отмена</a>
+          <button class="btn btn-primary" type="submit">
+            <i class="bi bi-check-circle"></i> Создать новость
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно вставки изображения -->
+<div class="modal fade" id="insertImageModal" tabindex="-1" aria-labelledby="insertImageModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="insertImageModalLabel">Вставка изображения</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="imageUrlInput" class="form-label">URL изображения</label>
+          <input type="text" class="form-control" id="imageUrlInput" placeholder="https://example.com/image.jpg">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-primary" onclick="confirmInsertImage()">Вставить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function cmd(name){ document.execCommand(name, false, null); }
+  function wrapSelection(tag){
+    const sel = window.getSelection();
+    if(!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+    const el = document.createElement(tag);
+    el.appendChild(range.extractContents());
+    range.insertNode(el);
+    sel.removeAllRanges();
+  }
+  let savedRange = null;
+  
+  function insertImageUrl(){
+    // Сохраняем позицию курсора в редакторе
+    const editor = document.getElementById('editor');
+    const sel = window.getSelection();
+    if (sel.rangeCount > 0) {
+      savedRange = sel.getRangeAt(0).cloneRange();
+    } else {
+      // Если нет выделения, создаем диапазон в конце редактора
+      savedRange = document.createRange();
+      savedRange.selectNodeContents(editor);
+      savedRange.collapse(false);
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('insertImageModal'));
+    document.getElementById('imageUrlInput').value = '';
+    modal.show();
+  }
+  
+  function confirmInsertImage(){
+    const url = document.getElementById('imageUrlInput').value.trim();
+    if(!url){
+      alert('Введите URL изображения');
+      return;
+    }
+    
+    // Восстанавливаем фокус и позицию в редакторе
+    const editor = document.getElementById('editor');
+    editor.focus();
+    
+    // Восстанавливаем выделение
+    if (savedRange) {
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedRange);
+    }
+    
+    // Вставляем изображение
+    document.execCommand('insertImage', false, url);
+    
+    // Закрываем модальное окно
+    bootstrap.Modal.getInstance(document.getElementById('insertImageModal')).hide();
+    
+    // Очищаем сохраненный диапазон
+    savedRange = null;
+  }
+  function submitNews(){
+    const html = document.getElementById('editor').innerHTML.trim();
+    const title = document.getElementById('title').value.trim();
+    if(!title || !html){
+      alert('Заполните заголовок и содержимое');
+      return false;
+    }
+    document.getElementById('contentHidden').value = html;
+    return true;
+  }
+</script>
+{% endblock %}
+

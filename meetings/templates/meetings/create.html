@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Создать встречу — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-3">Создать видеовстречу</h2>
+  <form method="post" class="card" onsubmit="return validateMeeting()">
+    {% csrf_token %}
+    <div class="card-body">
+      {% if messages %}{% for m in messages %}<div class="alert alert-{{ m.tags }}">{{ m }}</div>{% endfor %}{% endif %}
+      <div class="row g-3">
+        {% if attendee_user_id %}
+        <input type="hidden" name="attendee_user_id" value="{{ attendee_user_id }}">
+        {% endif %}
+        <div class="col-md-6">
+          <label class="form-label">Название *</label>
+          <input class="form-control" name="title" id="mtTitle" value="{{ title }}" required>
+          <div class="invalid-feedback">Введите название встречи</div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Дата и время</label>
+          <input class="form-control" type="datetime-local" name="scheduled" value="{{ scheduled }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Длительность, мин</label>
+          <input class="form-control" type="number" min="5" step="5" name="duration" value="{{ duration|default:30 }}">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Описание</label>
+          <textarea class="form-control" name="description" rows="3">{{ description }}</textarea>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer d-flex justify-content-end gap-2">
+      <a class="btn btn-outline-secondary" href="/meetings/">Отмена</a>
+      <button class="btn btn-primary" type="submit">Создать</button>
+    </div>
+  </form>
+</div>
+<script>
+  function validateMeeting(){
+    var t = document.getElementById('mtTitle');
+    if(!t.value.trim()){ t.classList.add('is-invalid'); t.focus(); return false; }
+    t.classList.remove('is-invalid'); return true;
+  }
+  // автозаполнение даты ближайшие +5 минут
+  (function(){
+    var input = document.querySelector('input[name="scheduled"]');
+    if(!input || input.value) return;
+    var d = new Date(Date.now()+5*60*1000);
+    d.setSeconds(0); d.setMilliseconds(0);
+    input.value = d.toISOString().slice(0,16);
+  })();
+</script>
+{% endblock %}
+

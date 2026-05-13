@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Расписание ухода — {{ animal.animal_name }} — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-0">Расписание ухода</h2>
+      <p class="text-muted mb-0">Животное: <a href="{% url 'animal_card_detail' animal.animal_id %}" class="text-decoration-none">{{ animal.animal_name }}</a></p>
+    </div>
+    <a href="{% url 'care_schedule_create' animal.animal_id %}" class="btn btn-warning">
+      <i class="bi bi-plus-circle"></i> Добавить расписание
+    </a>
+  </div>
+
+  <!-- Список расписаний -->
+  <div class="card shadow-sm mb-4" style="border-radius:16px;">
+    <div class="card-body">
+      {% if schedules %}
+      <div class="row g-3">
+        {% for s in schedules %}
+        <div class="col-md-6">
+          <div class="border rounded p-3 {% if not s.is_active %}bg-light{% endif %}">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <h6 class="mb-0">{{ s.activity }}</h6>
+              <div class="d-flex gap-2">
+                {% if not s.is_active %}
+                <span class="badge bg-secondary">Неактивно</span>
+                {% else %}
+                <span class="badge bg-success">Активно</span>
+                {% endif %}
+                <a href="{% url 'care_schedule_update' animal.animal_id s.id %}" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <form method="post" action="{% url 'care_schedule_delete' animal.animal_id s.id %}" class="d-inline js-confirm-submit"
+                      data-confirm="Удалить расписание ухода?"
+                      data-confirm-ok="Удалить">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+            <div class="small text-muted mb-1">
+              <i class="bi bi-clock"></i> <strong>Частота:</strong> {{ s.frequency }}
+              {% if s.time %} <span class="ms-2"><i class="bi bi-clock-history"></i> {{ s.time }}</span>{% endif %}
+            </div>
+            {% if s.description %}
+            <div class="small text-muted mb-1">{{ s.description }}</div>
+            {% endif %}
+            {% if s.notes %}
+            <div class="small text-muted"><strong>Примечания:</strong> {{ s.notes }}</div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-calendar-x" style="font-size:3rem;"></i>
+        <div class="mt-2">Нет записей в расписании ухода</div>
+        <a href="{% url 'care_schedule_create' animal.animal_id %}" class="btn btn-warning mt-3">
+          <i class="bi bi-plus-circle"></i> Добавить первое расписание
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="mb-4">
+    <a href="{% url 'animal_card_detail' animal.animal_id %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Вернуться к карточке животного
+    </a>
+  </div>
+</div>
+{% endblock %}
+

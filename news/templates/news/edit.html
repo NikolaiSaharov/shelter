@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Редактировать новость — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="card" style="border-radius:16px; overflow:hidden;">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <h3 class="mb-0 fw-bold" style="color:#2b1d16;">Редактировать новость</h3>
+      <form method="post" action="/news/{{ news.news_id }}/delete/" class="js-confirm-submit"
+            data-confirm="Удалить новость?"
+            data-confirm-ok="Удалить">
+        {% csrf_token %}
+        <button class="btn btn-outline-danger">Удалить</button>
+      </form>
+    </div>
+    <form method="post" enctype="multipart/form-data" class="card-body" onsubmit="return submitNews()">
+      {% csrf_token %}
+      {% if messages %}
+        {% for m in messages %}<div class="alert alert-{{ m.tags }}">{{ m }}</div>{% endfor %}
+      {% endif %}
+
+      <div class="mb-3">
+        <label class="form-label">Заголовок *</label>
+        <input class="form-control" name="title" id="title" value="{{ news.title }}" required>
+      </div>
+
+      <div class="mb-2"><label class="form-label">Содержимое *</label></div>
+      <div class="border rounded-3 mb-0 px-2 py-2 bg-light d-flex flex-wrap gap-2" id="editorToolbar">
+        <button type="button" class="btn btn-sm btn-light border" title="Жирный" onclick="cmd('bold')"><strong>B</strong></button>
+        <button type="button" class="btn btn-sm btn-light border" title="Курсив" onclick="cmd('italic')"><em>I</em></button>
+        <button type="button" class="btn btn-sm btn-light border" title="Зачеркнутый" onclick="cmd('strikeThrough')"><s>S</s></button>
+        <div class="vr mx-1"></div>
+        <button type="button" class="btn btn-sm btn-light border" title="Маркированный список" onclick="cmd('insertUnorderedList')">•</button>
+        <button type="button" class="btn btn-sm btn-light border" title="Нумерованный список" onclick="cmd('insertOrderedList')">1.</button>
+        <div class="vr mx-1"></div>
+        <button type="button" class="btn btn-sm btn-light border" title="Цитата" onclick="wrapSelection('blockquote')">“”</button>
+        <button type="button" class="btn btn-sm btn-light border" title="Код" onclick="wrapSelection('pre')">{ }</button>
+        <button type="button" class="btn btn-sm btn-light border" title="Изображение по URL" onclick="insertImageUrl()">🖼️</button>
+      </div>
+      <div id="editor" class="border rounded-3 p-3 mb-3" style="min-height:240px; background:#fff;" contenteditable="true">{{ news.content|safe }}</div>
+      <input type="hidden" name="content" id="contentHidden" required>
+
+      <div class="row g-3 align-items-end">
+        <div class="col-md-6">
+          <label class="form-label">Превью изображение (URL)</label>
+          <input class="form-control" name="image_url" id="image_url" value="{{ news.image_path }}" placeholder="https://example.com/image.jpg">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">или Загрузить файл</label>
+          <input class="form-control" type="file" name="image_file" accept="image/*">
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 pt-3">
+        <a class="btn btn-outline-secondary" href="/news/{{ news.news_id }}/">Отмена</a>
+        <button class="btn btn-primary" type="submit">Сохранить</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function cmd(name){ document.execCommand(name, false, null); }
+  function wrapSelection(tag){
+    const sel = window.getSelection();
+    if(!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+    const el = document.createElement(tag);
+    el.appendChild(range.extractContents());
+    range.insertNode(el);
+    sel.removeAllRanges();
+  }
+  function insertImageUrl(){
+    const url = prompt('URL изображения');
+    if(!url) return;
+    document.execCommand('insertImage', false, url);
+  }
+  function submitNews(){
+    const html = document.getElementById('editor').innerHTML.trim();
+    const title = document.getElementById('title').value.trim();
+    if(!title || !html){
+      alert('Заполните заголовок и содержимое');
+      return false;
+    }
+    document.getElementById('contentHidden').value = html;
+    return true;
+  }
+</script>
+{% endblock %}

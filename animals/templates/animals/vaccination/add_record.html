@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Добавление записи о вакцинации — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="mb-4">
+    <a href="{% url 'vaccination_detail' vaccination.id %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Назад
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card shadow-sm" style="border-radius:16px;">
+        <div class="card-header bg-white">
+          <h4 class="mb-0">Добавление записи о вакцинации</h4>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <strong>Животное:</strong> {{ vaccination.animal_name }}
+          </div>
+          <div class="mb-4">
+            <strong>Тип вакцинации:</strong> {{ vaccination.type_name }}
+          </div>
+
+          <form method="post">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+              <label class="form-label">Дата вакцинации <span class="text-danger">*</span></label>
+              <input type="date" name="vaccination_date" class="form-control" required value="{{ today|date:'Y-m-d' }}">
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-warning">
+                <i class="bi bi-check-circle"></i> Добавить
+              </button>
+              <a href="{% url 'vaccination_detail' vaccination.id %}" class="btn btn-outline-secondary">Отмена</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+

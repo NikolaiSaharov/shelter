@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% block title %}Календарь прививок и процедур — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">
+      <i class="bi bi-calendar-event"></i> Календарь прививок и медицинских процедур
+    </h2>
+    <div class="btn-group">
+      <a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-outline-secondary">
+        <i class="bi bi-chevron-left"></i> Предыдущий месяц
+      </a>
+      <a href="?year={{ next_year }}&month={{ next_month }}" class="btn btn-outline-secondary">
+        Следующий месяц <i class="bi bi-chevron-right"></i>
+      </a>
+      <a href="?year={{ today.year }}&month={{ today.month }}" class="btn btn-warning">
+        Текущий месяц
+      </a>
+    </div>
+  </div>
+
+  {% if calendar_feed_url %}
+  <div class="card shadow-sm mb-4 border-0" style="border-radius:16px; background:linear-gradient(135deg, #e8f0fe 0%, #fff 55%);">
+    <div class="card-body">
+      <h5 class="card-title fw-bold mb-2">
+        <i class="bi bi-google text-primary"></i> Google Календарь
+      </h5>
+      <p class="text-muted small mb-3">
+        Подключите календарь прививок и медицинских записей к Google: события обновляются автоматически (обычно раз в несколько часов).
+        В ленту попадают события за год назад и на два года вперёд — в соответствии с вашими правами (менеджер видит только свой приют).
+        <span class="d-block mt-1">Чтобы Google мог загрузить ленту, адрес сайта должен быть доступен из интернета по <strong>https</strong> (на <code>localhost</code> подписка не сработает).</span>
+      </p>
+      <ol class="small mb-3 ps-3">
+        <li class="mb-1">Откройте <a href="https://calendar.google.com/" target="_blank" rel="noopener">Google Календарь</a>.</li>
+        <li class="mb-1">Слева рядом с «Другие календари» нажмите «+» → <strong>По URL</strong>.</li>
+        <li>Вставьте скопированную ссылку ниже и подтвердите.</li>
+      </ol>
+      <div class="input-group input-group-sm flex-nowrap">
+        <input type="text" class="form-control font-monospace small" id="calendarFeedUrl" readonly value="{{ calendar_feed_url }}">
+        <button type="button" class="btn btn-primary" id="copyCalendarFeedBtn">
+          <i class="bi bi-clipboard"></i> Копировать
+        </button>
+      </div>
+      <p class="text-danger small mt-2 mb-0">
+        <i class="bi bi-shield-exclamation"></i> Ссылка персональная: не пересылайте её — по ней виден календарь вашего аккаунта Анималити.
+      </p>
+    </div>
+  </div>
+  <script>
+    (function(){
+      var btn = document.getElementById('copyCalendarFeedBtn');
+      var inp = document.getElementById('calendarFeedUrl');
+      if (!btn || !inp) return;
+      btn.addEventListener('click', function(){
+        inp.select();
+        inp.setSelectionRange(0, 99999);
+        var url = inp.value;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(function(){
+            btn.innerHTML = '<i class="bi bi-check2"></i> Скопировано';
+            setTimeout(function(){ btn.innerHTML = '<i class="bi bi-clipboard"></i> Копировать'; }, 2000);
+          });
+        } else {
+          document.execCommand('copy');
+          btn.innerHTML = '<i class="bi bi-check2"></i> Скопировано';
+          setTimeout(function(){ btn.innerHTML = '<i class="bi bi-clipboard"></i> Копировать'; }, 2000);
+        }
+      });
+    })();
+  </script>
+  {% endif %}
+
+  <div class="card shadow-sm mb-4" style="border-radius:16px;">
+    <div class="card-header bg-white text-center">
+      <h3 class="mb-0">{{ month_name }} {{ year }}</h3>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-bordered mb-0" style="table-layout: fixed;">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 14.28%;" class="text-center">Пн</th>
+              <th style="width: 14.28%;" class="text-center">Вт</th>
+              <th style="width: 14.28%;" class="text-center">Ср</th>
+              <th style="width: 14.28%;" class="text-center">Чт</th>
+              <th style="width: 14.28%;" class="text-center">Пт</th>
+              <th style="width: 14.28%;" class="text-center">Сб</th>
+              <th style="width: 14.28%;" class="text-center">Вс</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for week in weeks %}
+            <tr>
+              {% for day_data in week %}
+              <td class="p-2" style="height: 120px; vertical-align: top; {% if day_data.day is None %}background-color: #f8f9fa;{% elif day_data.is_today %}background-color: #fff3cd;{% endif %}">
+                {% if day_data.day %}
+                  <div class="d-flex justify-content-between align-items-start mb-1">
+                    <strong class="{% if day_data.is_today %}text-warning{% endif %}">{{ day_data.day }}</strong>
+                    {% if day_data.events %}
+                    <span class="badge bg-primary">{{ day_data.events|length }}</span>
+                    {% endif %}
+                  </div>
+                  {% if day_data.events %}
+                  <div class="small">
+                    {% for event in day_data.events %}
+                    <div class="mb-1">
+                      {% if event.type == 'vaccination' %}
+                      <div class="badge bg-success text-wrap w-100 text-start" style="font-size: 0.7rem;">
+                        <i class="bi bi-shield-check"></i> 
+                        <a href="/animals/manager/cards/{{ event.animal_id }}/" class="text-white text-decoration-none">
+                          {{ event.animal_name }}: {{ event.vaccination_name }}
+                        </a>
+                      </div>
+                      {% elif event.type == 'medical' %}
+                      <div class="badge bg-danger text-wrap w-100 text-start" style="font-size: 0.7rem;">
+                        <i class="bi bi-heart-pulse"></i> 
+                        <a href="/animals/manager/cards/{{ event.animal_id }}/" class="text-white text-decoration-none">
+                          {{ event.animal_name }}: {{ event.diagnosis|truncatewords:3 }}
+                        </a>
+                      </div>
+                      {% endif %}
+                    </div>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
+                {% endif %}
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm" style="border-radius:16px;">
+        <div class="card-body">
+          <h6 class="card-title">
+            <i class="bi bi-shield-check text-success"></i> Легенда
+          </h6>
+          <div class="small">
+            <div class="mb-2">
+              <span class="badge bg-success me-2">Вакцинация</span>
+              Запланированные прививки
+            </div>
+            <div class="mb-2">
+              <span class="badge bg-danger me-2">Медицинская процедура</span>
+              Записи о лечении и осмотрах
+            </div>
+            <div>
+              <span class="badge bg-warning me-2">Сегодня</span>
+              Текущий день
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm" style="border-radius:16px;">
+        <div class="card-body">
+          <h6 class="card-title">
+            <i class="bi bi-info-circle text-primary"></i> Статистика месяца
+          </h6>
+          <div class="small">
+            <div class="mb-2">
+              <strong>Вакцинаций:</strong> {{ total_vaccinations }}
+            </div>
+            <div>
+              <strong>Медицинских процедур:</strong> {{ total_medical }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .table td {
+    border: 1px solid #dee2e6;
+  }
+  .table td:hover {
+    background-color: #f8f9fa !important;
+  }
+</style>
+{% endblock %}

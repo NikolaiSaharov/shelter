@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+{% load tz %}
+{% block title %}Профиль — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-3">Профиль</h2>
+  <div class="row g-4">
+    <div class="col-lg-3 order-2 order-lg-1">
+      <div class="card h-100"><div class="card-body">
+        <h5 class="card-title">Меню</h5>
+        <div class="d-grid gap-2">
+          <button class="btn btn-outline-secondary active" data-section="profile">Профиль</button>
+          {% if not is_admin_or_manager %}
+            <button class="btn btn-outline-secondary" data-section="applications">Заявки</button>
+            <button class="btn btn-outline-secondary" data-section="donations">Пожертвования</button>
+          {% endif %}
+          {% if is_admin %}
+            <a class="btn btn-outline-secondary" href="{% url 'audit_log' %}">
+              <i class="bi bi-journal-text"></i> Аудитлог
+            </a>
+            <a class="btn btn-outline-secondary" href="{% url 'backup_create' %}">
+              <i class="bi bi-download"></i> Создать бэкап
+            </a>
+            <a class="btn btn-outline-secondary" href="{% url 'backup_restore' %}">
+              <i class="bi bi-upload"></i> Восстановить из бэкапа
+            </a>
+          {% endif %}
+          <a class="btn btn-outline-secondary" href="/messages/">Написать сообщение</a>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="col-lg-9 order-1 order-lg-2">
+      <section id="section-profile">
+        <form method="post" enctype="multipart/form-data" class="card mb-3" id="profileCard" onsubmit="return validateProfileForm()">
+          {% csrf_token %}
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-4">
+              <h5 class="card-title fs-4 fw-bold" style="color:#2b1d16;">Профиль</h5>
+              <div>
+                <button class="btn btn-outline-secondary me-2" id="editBtn" type="button" onclick="startEdit()">Редактировать профиль</button>
+                <div class="d-inline" id="editActions" style="display:none;">
+                  <button class="btn btn-outline-secondary me-2" type="button" onclick="cancelEdit()">Отмена</button>
+                  <button class="btn btn-primary" type="submit">Сохранить</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-4 align-items-start mb-3">
+              <div class="col-md-3 text-center">
+                <button class="position-relative d-inline-flex align-items-center justify-content-center rounded-circle" style="width:128px;height:128px;background:rgba(240,138,36,.1);color:#F08A24;border:none;overflow:hidden;" type="button" onclick="document.getElementById('avatar_file').click()">
+                  {% if db_profile.profile_picture %}
+                    <img id="avatarImg" src="{{ db_profile.profile_picture }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+                  {% else %}
+                    <img id="avatarImg" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;">
+                    <span id="avatarStub" class="fw-bold">{{ db_user.first_name|first|default:'U'|upper }}</span>
+                  {% endif %}
+                </button>
+                <input id="avatar_file" name="avatar_file" type="file" accept="image/*" class="d-none" onchange="onAvatarSelected(event)">
+                <div id="avatarHelp" class="small text-muted mt-2" style="display:none;">Файл выбран, не забудьте нажать «Сохранить»</div>
+              </div>
+              <div class="col-md-9">
+                <div class="row g-3" id="viewFields">
+                  <div class="col-12"><div class="fw-bold fs-5" id="viewFullName">{{ db_user.first_name }} {{ db_user.last_name }}</div></div>
+                  <div class="col-12 text-muted" id="viewPhone">{{ db_user.phone }}</div>
+                  <div class="col-12 text-muted" id="viewEmail">{{ db_user.email }}</div>
+                </div>
+                <div class="row g-3" id="editFields" style="display:none;">
+                  <div class="col-md-12">
+                    <div class="text-muted small">Аватар будет обновлён после сохранения</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="card border-0" style="background:#FFF7EF;border-radius:16px;">
+                  <div class="card-body">
+                    <div class="text-muted small">Адрес</div>
+                    <div id="viewAddress" class="fw-semibold mt-1">{{ db_profile.home_address|default:'—' }}</div>
+                    <div id="editAddressWrap" style="display:none;" class="mt-1">
+                      <input type="hidden" name="home_address" id="address" value="{{ db_profile.home_address }}">
+                      <div class="row g-2">
+                        <div class="col-12 col-md-6">
+                          <label class="form-label small mb-1">Город *</label>
+                          <input class="form-control" id="addr_city" autocomplete="address-level2" placeholder="Москва" inputmode="text">
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <label class="form-label small mb-1">Улица *</label>
+                          <input class="form-control" id="addr_street" autocomplete="address-line1" placeholder="Тверская" inputmode="text">
+                        </div>
+                        <div class="col-6">
+                          <label class="form-label small mb-1">Дом *</label>
+                          <input class="form-control" id="addr_house" autocomplete="address-line2" placeholder="10" inputmode="numeric">
+                        </div>
+                        <div class="col-6">
+                          <label class="form-label small mb-1">Квартира</label>
+                          <input class="form-control" id="addr_apartment" placeholder="5" inputmode="numeric">
+                        </div>
+                      </div>
+                      <div class="form-text">Адрес будет сохранён в формате: Город, улица, д. N[, кв. M]</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card border-0" style="background:#FFF7EF;border-radius:16px;">
+                  <div class="card-body">
+                    <div class="text-muted small">Дата рождения</div>
+                    <div id="viewDob" class="fw-semibold mt-1">{% if db_profile.date_of_birth %}{{ db_profile.date_of_birth|date:'d.m.Y' }}{% else %}—{% endif %}</div>
+                    <div id="editDobWrap" style="display:none;" class="mt-1">
+                      <input type="date" class="form-control" name="date_of_birth" id="dob" value="{% if db_profile.date_of_birth %}{{ db_profile.date_of_birth|date:'Y-m-d' }}{% endif %}">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </form>
+      </section>
+
+      <!-- Section: Applications -->
+      {% if not is_admin_or_manager %}
+      <section id="section-applications" style="display:none;">
+        <div class="card"><div class="card-body">
+          <h5 class="card-title">Мои заявки</h5>
+          {% if applications %}
+          <div class="list-group">
+            {% for a in applications %}
+            <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" href="/accounts/applications/{{ a.id }}/">
+              <div>
+                <div class="fw-semibold">{{ a.animal }}</div>
+                <div class="text-muted small">{{ a.date|localtime|date:'d.m.Y H:i' }}</div>
+              </div>
+              <span class="badge bg-{{ a.status_class }}">{{ a.status }}</span>
+            </a>
+            {% endfor %}
+          </div>
+          {% else %}
+            <p class="text-muted mb-0">Ваш список заявок пуст.</p>
+          {% endif %}
+        </div></div>
+      </section>
+
+      <!-- Section: Donations -->
+      <section id="section-donations" style="display:none;">
+        <div class="card"><div class="card-body">
+          <h5 class="card-title">Мои пожертвования</h5>
+          {% if donations %}
+          <div class="list-group">
+            {% for d in donations %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fw-semibold">{{ d.animal }}</div>
+                <div class="text-muted small">{{ d.date|localtime|date:'d.m.Y H:i' }}</div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary">{{ d.amount }} ₽</span>
+                <a href="{% url 'donation_receipt' d.id %}" class="btn btn-sm btn-outline-secondary">
+                  <i class="bi bi-file-earmark-text"></i> Чек
+                </a>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+            <p class="text-muted mb-0">Список пожертвований пуст.</p>
+          {% endif %}
+        </div></div>
+      </section>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // menu switching
+  document.querySelectorAll('[data-section]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('[data-section]').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');
+      const target = this.getAttribute('data-section');
+      document.getElementById('section-profile').style.display = (target==='profile')?'block':'none';
+      {% if not is_admin_or_manager %}
+      const appsSection = document.getElementById('section-applications');
+      const donationsSection = document.getElementById('section-donations');
+      if(appsSection) appsSection.style.display = (target==='applications')?'block':'none';
+      if(donationsSection) donationsSection.style.display = (target==='donations')?'block':'none';
+      {% endif %}
+    });
+  });
+
+  // open tab from query (?tab=donations)
+  (function(){
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if(tab === 'donations'){
+      const btn = Array.from(document.querySelectorAll('[data-section]')).find(b=>b.getAttribute('data-section')==='donations');
+      if(btn) btn.click();
+    }
+  })();
+
+  function startEdit(){
+    document.getElementById('editBtn').style.display='none';
+    document.getElementById('editActions').style.display='inline-block';
+    document.getElementById('viewFields').style.display='none';
+    document.getElementById('editFields').style.display='flex';
+    document.getElementById('editFields').style.gap='1rem';
+    document.getElementById('viewAddress').style.display='none';
+    document.getElementById('editAddressWrap').style.display='block';
+    document.getElementById('viewDob').style.display='none';
+    document.getElementById('editDobWrap').style.display='block';
+  }
+  function cancelEdit(){
+    document.getElementById('editBtn').style.display='inline-block';
+    document.getElementById('editActions').style.display='none';
+    document.getElementById('viewFields').style.display='flex';
+    document.getElementById('editFields').style.display='none';
+    document.getElementById('viewAddress').style.display='block';
+    document.getElementById('editAddressWrap').style.display='none';
+    document.getElementById('viewDob').style.display='block';
+    document.getElementById('editDobWrap').style.display='none';
+    const img = document.getElementById('avatarImg');
+    const stub = document.getElementById('avatarStub');
+    const help = document.getElementById('avatarHelp');
+    if(help) help.style.display='none';
+    if(img && !img.src){ if(stub) stub.style.display='inline'; img.style.display='none'; }
+  }
+  function onAvatarSelected(e){
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
+    const url = URL.createObjectURL(file);
+    const img = document.getElementById('avatarImg');
+    const stub = document.getElementById('avatarStub');
+    img.src = url; img.style.display='block'; if(stub) stub.style.display='none';
+    document.getElementById('avatarHelp').style.display='block';
+  }
+  function validateProfileForm(){
+    const addr = document.getElementById('address');
+    const wrap = document.getElementById('editAddressWrap');
+    if(wrap.style.display !== 'none' && addr){
+      const city = document.getElementById('addr_city');
+      const street = document.getElementById('addr_street');
+      const house = document.getElementById('addr_house');
+      const apt = document.getElementById('addr_apartment');
+
+      const cityVal = (city?.value || '').trim();
+      const streetVal = (street?.value || '').trim();
+      const houseVal = (house?.value || '').trim();
+      const aptVal = (apt?.value || '').trim();
+
+      const textRe = /^[0-9A-Za-zА-Яа-яЁё\s.\-]+$/;
+      const numRe = /^[0-9]{1,6}[A-Za-zА-Яа-яЁё]?$|^[0-9]{1,6}\/[0-9]{1,6}$/;
+      const aptRe = /^[0-9]{1,6}$/;
+
+      let ok = true;
+      function mark(el, isOk){
+        if(!el) return;
+        if(isOk) el.classList.remove('is-invalid'); else el.classList.add('is-invalid');
+      }
+
+      if(!cityVal || !textRe.test(cityVal)){ ok = false; mark(city, false); } else mark(city, true);
+      if(!streetVal || !textRe.test(streetVal)){ ok = false; mark(street, false); } else mark(street, true);
+      if(!houseVal || !numRe.test(houseVal)){ ok = false; mark(house, false); } else mark(house, true);
+      if(aptVal && !aptRe.test(aptVal)){ ok = false; mark(apt, false); } else mark(apt, true);
+
+      if(!ok){
+        (city && city.focus) ? city.focus() : null;
+        return false;
+      }
+
+      // Собираем в одно поле для сохранения в БД
+      let composed = `${cityVal}, ${streetVal}, д. ${houseVal}`;
+      if (aptVal) composed += `, кв. ${aptVal}`;
+      addr.value = composed;
+    }
+    return true;
+  }
+
+  (function initAddressParts(){
+    const hidden = document.getElementById('address');
+    const city = document.getElementById('addr_city');
+    const street = document.getElementById('addr_street');
+    const house = document.getElementById('addr_house');
+    const apt = document.getElementById('addr_apartment');
+    if(!hidden || !city || !street || !house || !apt) return;
+
+    const raw = (hidden.value || '').trim();
+    const m = raw.match(/^([^,]+),\s*([^,]+),\s*д\.\s*([^,]+?)(?:,\s*кв\.\s*([^,]+))?$/i);
+    if(m){
+      city.value = (m[1] || '').trim();
+      street.value = (m[2] || '').trim();
+      house.value = (m[3] || '').trim();
+      apt.value = (m[4] || '').trim();
+    }
+  })();
+</script>
+{% endblock %}

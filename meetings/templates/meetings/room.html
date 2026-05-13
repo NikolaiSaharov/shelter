@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block title %}Встреча — Анималити{% endblock %}
+{% block content %}
+<style>
+  .vh-100-fixed{height:calc(100vh - 120px);} /* minus header/footer */
+  .glass{background:rgba(0,0,0,.35);backdrop-filter:blur(8px)}
+</style>
+<div class="container-fluid px-0">
+  <div class="glass text-white">
+    <div class="container py-2 d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-3">
+        <span class="fw-bold">Комната</span>
+        <span class="text-white-50 small">{{ link }}</span>
+      </div>
+      <a class="btn btn-sm btn-outline-light" href="/meetings/">Выйти</a>
+    </div>
+  </div>
+
+  <div class="container py-3">
+    <div class="row g-3">
+      <div class="col-lg-9">
+        <div class="ratio ratio-16x9 bg-dark rounded-3 position-relative shadow">
+          <video id="localVideo" autoplay playsinline muted class="w-100 h-100" style="object-fit:contain"></video>
+          <div id="indicators" class="position-absolute top-0 start-0 p-2 d-flex flex-column gap-2"></div>
+        </div>
+        <div class="d-flex justify-content-center gap-3 mt-3">
+          <button id="btnMic" class="btn btn-light rounded-circle p-3" title="Микрофон">
+            <i class="bi bi-mic-fill" data-on></i>
+            <i class="bi bi-mic-mute-fill" data-off style="display:none"></i>
+          </button>
+          <button id="btnCam" class="btn btn-light rounded-circle p-3" title="Камера">
+            <i class="bi bi-camera-video-fill" data-on></i>
+            <i class="bi bi-camera-video-off-fill" data-off style="display:none"></i>
+          </button>
+          <button id="btnShare" class="btn btn-outline-success rounded-circle p-3" title="Демонстрация">
+            <i class="bi bi-display"></i>
+          </button>
+          <a href="/meetings/" class="btn btn-danger rounded-circle p-3" title="Выйти">
+            <i class="bi bi-telephone-x-fill"></i>
+          </a>
+        </div>
+      </div>
+      <div class="col-lg-3">
+        <div class="card h-100">
+          <div class="card-body">
+            <h6 class="card-title">Участники</h6>
+            <div id="peers" class="vstack gap-2">
+              {% for p in participants %}
+              <div class="d-flex align-items-center gap-2">
+                <div class="rounded-circle bg-warning d-inline-flex align-items-center justify-content-center" style="width:36px;height:36px;">{{ p.name|slice:":1" }}</div>
+                <div>
+                  <div class="small fw-semibold">{% if p.user_id == me_user_id %}Вы{% else %}{{ p.name }}{% endif %}</div>
+                  <div class="small text-muted">{% if p.role == 'Host' %}Организатор{% else %}Участник{% endif %}</div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const videoEl = document.getElementById('localVideo');
+  const ind = document.getElementById('indicators');
+  let localStream = null;
+
+  async function init(){
+    try{
+      localStream = await navigator.mediaDevices.getUserMedia({video:true, audio:true});
+      videoEl.srcObject = localStream;
+    }catch(e){
+      console.error(e);
+      ind.innerHTML = '<div class="badge bg-danger">Нет доступа к камере/микрофону</div>'
+    }
+  }
+  init();
+
+  document.getElementById('btnMic').addEventListener('click', function(){
+    if(!localStream) return;
+    const t = localStream.getAudioTracks()[0];
+    if(!t) return;
+    t.enabled = !t.enabled;
+    this.querySelector('[data-on]').style.display = t.enabled? 'none':'inline';
+    this.querySelector('[data-off]').style.display = t.enabled? 'inline':'none';
+  });
+  document.getElementById('btnCam').addEventListener('click', function(){
+    if(!localStream) return;
+    const t = localStream.getVideoTracks()[0];
+    if(!t) return;
+    t.enabled = !t.enabled;
+    this.querySelector('[data-on]').style.display = t.enabled? 'none':'inline';
+    this.querySelector('[data-off]').style.display = t.enabled? 'inline':'none';
+  });
+  document.getElementById('btnShare').addEventListener('click', async function(){
+    try{
+      if(this.dataset.active === '1'){
+        // stop share -> return to camera
+        if(localStream){ videoEl.srcObject = localStream; }
+        this.dataset.active = '';
+        this.classList.remove('btn-success');
+        this.classList.add('btn-outline-success');
+        this.textContent = 'Показать экран';
+        return;
+      }
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({video:true, audio:true});
+      videoEl.srcObject = screenStream;
+      this.dataset.active = '1';
+      this.classList.remove('btn-outline-success');
+      this.classList.add('btn-success');
+      this.textContent = 'Остановить показ';
+      screenStream.getVideoTracks()[0].addEventListener('ended', ()=>{
+        if(localStream){ videoEl.srcObject = localStream; }
+        this.dataset.active = '';
+        this.classList.remove('btn-success');
+        this.classList.add('btn-outline-success');
+        this.textContent = 'Показать экран';
+      });
+    }catch(e){console.error(e)}
+  });
+</script>
+{% endblock %}
+

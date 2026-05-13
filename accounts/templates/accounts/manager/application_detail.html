@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load tz %}
+{% block title %}Заявка №{{ app.id }} — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Заявка №{{ app.id }}</h2>
+    <a href="{% url 'applications_manager_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> К списку
+    </a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0" style="border-radius:16px;">
+        <div class="card-header bg-white border-0 pt-4">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Информация о заявке</h5>
+            <span class="badge bg-{{ app.status_class }} fs-6">{{ app.status }}</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row g-4">
+            <div class="col-md-6">
+              <div class="text-muted small mb-1">Питомец</div>
+              <div class="fw-bold fs-5">
+                <a href="/animals/{{ app.animal_id }}/" class="text-decoration-none">{{ app.animal_name }}</a>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-muted small mb-1">Дата подачи</div>
+              <div class="fw-semibold">{{ app.date|localtime|date:'d.m.Y H:i' }}</div>
+            </div>
+            <div class="col-12"><hr></div>
+            <div class="col-md-12">
+              <div class="text-muted small mb-2">Причина усыновления</div>
+              <div class="p-3 rounded" style="background:#FFF7EF;">{{ app.reason|linebreaks }}</div>
+            </div>
+            {% if app.experience %}
+            <div class="col-md-12">
+              <div class="text-muted small mb-2">Опыт содержания животных</div>
+              <div class="p-3 rounded" style="background:#FFF7EF;">{{ app.experience|linebreaks }}</div>
+            </div>
+            {% endif %}
+            {% if app.housing %}
+            <div class="col-md-12">
+              <div class="text-muted small mb-2">Условия проживания</div>
+              <div class="p-3 rounded" style="background:#FFF7EF;">{{ app.housing|linebreaks }}</div>
+            </div>
+            {% endif %}
+            {% if app.comment %}
+            <div class="col-md-12">
+              <div class="text-muted small mb-2">Комментарий</div>
+              <div class="p-3 rounded" style="background:#FFF7EF;">{{ app.comment|linebreaks }}</div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0" style="border-radius:16px;">
+        <div class="card-header bg-white border-0 pt-4">
+          <h5 class="mb-0">Информация о пользователе</h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <div class="text-muted small mb-1">Имя</div>
+            <div class="fw-semibold">{{ app.user_name }}</div>
+          </div>
+          <div class="mb-3">
+            <div class="text-muted small mb-1">Email</div>
+            <div>{{ app.email }}</div>
+          </div>
+          <div class="mb-3">
+            <div class="text-muted small mb-1">Телефон</div>
+            <div>{{ app.phone }}</div>
+          </div>
+          {% if app.date_of_birth %}
+          <div class="mb-3">
+            <div class="text-muted small mb-1">Дата рождения</div>
+            <div>{{ app.date_of_birth|date:'d.m.Y' }}</div>
+          </div>
+          {% endif %}
+          {% if app.address %}
+          <div class="mb-3">
+            <div class="text-muted small mb-1">Адрес</div>
+            <div>{{ app.address }}</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if app.status != 'Одобрено' %}
+      <div class="card shadow-sm border-0 mt-4" style="border-radius:16px;">
+        <div class="card-header bg-white border-0 pt-4">
+          <h5 class="mb-0">Действия</h5>
+        </div>
+        <div class="card-body">
+          {% if app.status != 'Одобрено' %}
+          <form method="post" action="{% url 'application_manager_approve' app.id %}" class="mb-3">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success w-100">
+              <i class="bi bi-check-circle"></i> {% if app.status == 'Отклонено' %}Одобрить заявку{% else %}Одобрить заявку{% endif %}
+            </button>
+          </form>
+          {% endif %}
+          
+          {% if app.status != 'Одобрено' %}
+          <button type="button" class="btn {% if app.status == 'Отклонено' %}btn-warning{% else %}btn-danger{% endif %} w-100" data-bs-toggle="modal" data-bs-target="#rejectModal">
+            <i class="bi bi-x-circle"></i> {% if app.status == 'Отклонено' %}Изменить на отклонено{% else %}Отклонить заявку{% endif %}
+          </button>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{% url 'application_manager_reject' app.id %}">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">Отклонить заявку</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Причина отклонения (необязательно)</label>
+            <textarea class="form-control" name="rejection_reason" rows="3" placeholder="Укажите причину отклонения заявки..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="submit" class="btn btn-danger">Отклонить заявку</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+// Горячие клавиши для страницы деталей заявки
+document.addEventListener('DOMContentLoaded', function() {
+  const approveForm = document.querySelector('form[action*="approve"]');
+  const rejectButton = document.querySelector('button[data-bs-target="#rejectModal"]');
+  const backLink = document.querySelector('a[href*="applications_manager_list"]');
+  const rejectModal = document.getElementById('rejectModal');
+  const rejectForm = rejectModal ? rejectModal.querySelector('form') : null;
+  
+  document.addEventListener('keydown', function(e) {
+    // Игнорируем, если пользователь вводит текст в поле или модальное окно открыто
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+      // В модальном окне отклонения Enter подтверждает форму
+      if (e.key === 'Enter' && rejectModal && rejectModal.classList.contains('show') && rejectForm) {
+        return; // Разрешаем стандартное поведение Enter в форме
+      }
+      return;
+    }
+    
+    // "A" или "Enter" - одобрить заявку
+    if ((e.key === 'a' || e.key === 'A' || e.key === 'Enter') && approveForm && !rejectModal?.classList.contains('show')) {
+      e.preventDefault();
+      approveForm.submit();
+    }
+    
+    // "R" - открыть модальное окно отклонения
+    if (e.key === 'r' || e.key === 'R') {
+      e.preventDefault();
+      if (rejectButton && !rejectModal?.classList.contains('show')) {
+        rejectButton.click();
+        // Фокус на поле причины после открытия модального окна
+        setTimeout(function() {
+          const reasonTextarea = rejectModal?.querySelector('textarea[name="rejection_reason"]');
+          if (reasonTextarea) {
+            reasonTextarea.focus();
+          }
+        }, 300);
+      }
+    }
+    
+    // "B" или "Esc" - вернуться к списку
+    if ((e.key === 'b' || e.key === 'B' || e.key === 'Escape') && backLink) {
+      // Если модальное окно открыто, сначала закрываем его
+      if (rejectModal && rejectModal.classList.contains('show')) {
+        const closeButton = rejectModal.querySelector('button[data-bs-dismiss="modal"]');
+        if (closeButton) {
+          closeButton.click();
+          return;
+        }
+      }
+      e.preventDefault();
+      backLink.click();
+    }
+  });
+  
+  // Подсказка о горячих клавишах (опционально, можно убрать)
+  console.log('Горячие клавиши: A/Enter - одобрить, R - отклонить, B/Esc - назад');
+});
+</script>
+{% endblock %}
+

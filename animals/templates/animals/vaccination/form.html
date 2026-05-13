@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Добавление вакцинации — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="mb-4">
+    <a href="{% url 'vaccinations_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Назад к списку
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm" style="border-radius:16px;">
+        <div class="card-header bg-white">
+          <h4 class="mb-0">Добавление вакцинации</h4>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+              <label class="form-label">Животное <span class="text-danger">*</span></label>
+              <select name="animal_id" class="form-select" required>
+                <option value="">Выберите животное</option>
+                {% for a in animals %}
+                  <option value="{{ a.id }}" {% if animal_id == a.id|stringformat:"s" %}selected{% endif %}>
+                    {{ a.name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Тип вакцинации <span class="text-danger">*</span></label>
+              <select name="vaccination_type_id" class="form-select" required>
+                <option value="">Выберите тип вакцинации</option>
+                {% for t in types %}
+                  <option value="{{ t.id }}">{{ t.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Дата вакцинации</label>
+              <input type="date" name="vaccination_date" class="form-control" value="{{ today|date:'Y-m-d' }}">
+              <div class="form-text">Если указать дату, будет создана запись о вакцинации. Если не указывать, можно будет добавить позже.</div>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-warning">
+                <i class="bi bi-check-circle"></i> Добавить
+              </button>
+              <a href="{% url 'vaccinations_list' %}" class="btn btn-outline-secondary">Отмена</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+

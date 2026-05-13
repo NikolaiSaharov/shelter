@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Типы животных — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Типы животных</h2>
+    <a href="{% url 'animal_type_create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle"></i> Создать тип
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card shadow-sm" style="border-radius:16px;">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead style="background:#FFF7EF;">
+          <tr>
+            <th style="width:80px;">ID</th>
+            <th>Название</th>
+            <th style="width:150px;" class="text-end">Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for type in types %}
+          <tr>
+            <td class="align-middle">{{ type.type_id }}</td>
+            <td class="align-middle fw-semibold">{{ type.type_name }}</td>
+            <td class="align-middle text-end">
+              <a href="{% url 'animal_type_update' type.type_id %}" class="btn btn-sm btn-outline-primary me-1">
+                <i class="bi bi-pencil"></i> Изменить
+              </a>
+              <form method="post" action="{% url 'animal_type_delete' type.type_id %}" class="d-inline js-confirm-submit"
+                    data-confirm="Вы уверены, что хотите удалить тип «{{ type.type_name }}»?"
+                    data-confirm-ok="Удалить">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                  <i class="bi bi-trash"></i> Удалить
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="3" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox" style="font-size:3rem;"></i>
+              <div class="mt-2">Типы животных не найдены</div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="mt-3">
+    <a href="/animals/admin/" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Назад к управлению животными
+    </a>
+  </div>
+</div>
+{% endblock %}
+

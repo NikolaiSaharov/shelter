@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Как помочь — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-4">Как помочь приюту</h2>
+  <div class="row g-4">
+    <div class="col-md-6 col-xl-4">
+      <div class="card h-100 border-0 shadow-sm position-relative overflow-hidden" style="border-radius:16px;">
+        <img src="https://images.unsplash.com/photo-1518791841217-8f162f1e1131?q=80&w=1200&auto=format&fit=crop" class="w-100" style="height:200px;object-fit:cover;">
+        <div class="card-body">
+          <h5 class="card-title">Пожертвуйте животному</h5>
+          <p class="text-muted">Финансово или приносите корм, лекарства, амуницию.</p>
+        </div>
+        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background:rgba(0,0,0,.55); color:#fff; opacity:0; transition:opacity .25s;">
+          <div class="text-center px-3">Выберите питомца на сайте и оформите пожертвование в один клик.</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <div class="card h-100 border-0 shadow-sm position-relative overflow-hidden" style="border-radius:16px;">
+        <img src="https://images.unsplash.com/photo-1544568100-847a948585b9?q=80&w=1200&auto=format&fit=crop" class="w-100" style="height:200px;object-fit:cover;">
+        <div class="card-body">
+          <h5 class="card-title">Приютите</h5>
+          <p class="text-muted">Заполните заявку — мы поможем подобрать друга.</p>
+        </div>
+        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background:rgba(0,0,0,.55); color:#fff; opacity:0; transition:opacity .25s;">
+          <div class="text-center px-3">Оформите заявку на усыновление и пройдите видеознакомство.</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <div class="card h-100 border-0 shadow-sm position-relative overflow-hidden" style="border-radius:16px;">
+        <img src="https://images.unsplash.com/photo-1517849845537-4d257902454a?q=80&w=1200&auto=format&fit=crop" class="w-100" style="height:200px;object-fit:cover;">
+        <div class="card-body">
+          <h5 class="card-title">Поделитесь информацией</h5>
+          <p class="text-muted">Расскажите друзьям о наших подопечных и акциях.</p>
+        </div>
+        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background:rgba(0,0,0,.55); color:#fff; opacity:0; transition:opacity .25s;">
+          <div class="text-center px-3">Репостите в соцсетях, помогая быстрее найти дом питомцам.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // hover overlay
+  document.querySelectorAll('.card.position-relative').forEach(function(card){
+    const overlay = card.querySelector('.position-absolute.top-0');
+    card.addEventListener('mouseenter', ()=> overlay.style.opacity = 1);
+    card.addEventListener('mouseleave', ()=> overlay.style.opacity = 0);
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Приют животных{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { theme: { extend: { colors: { primary: '#F08A24', secondary: '#FCF7F2', accent: '#8B5E3C' }, fontFamily: { sans: [ 'Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Arial', 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji' ] } } } };</script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/css/style.css?v=2">
+</head>
+<body class="d-flex flex-column" style="min-height:100vh; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial;">
+<nav class="navbar navbar-expand-lg navbar-light site-navbar">
+  <div class="container d-flex align-items-center">
+    <a class="navbar-brand fw-bold" href="/">🐾 Анималити</a>
+    <div class="ms-auto">
+      <ul class="navbar-nav d-flex align-items-center">
+        <li class="nav-item"><a class="nav-link {% if '/animals' in request.path %}active{% endif %}" href="/animals/catalog/">Наши питомцы</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/news' in request.path %}active{% endif %}" href="/news/">Новости</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/help' in request.path %}active{% endif %}" href="/help/">Как помочь</a></li>
+        {% if auth_user %}
+          {% if auth_user.role == 'Admin' %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle {% if '/animals/admin' in request.path or '/news/admin' in request.path or '/animals/medical' in request.path or '/animals/vaccinations' in request.path %}active{% endif %}" 
+                 href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-gear"></i> Админ-панель
+              </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="/animals/admin/"><i class="bi bi-heart"></i> Управление животными</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/animals/admin/types/"><i class="bi bi-tags"></i> Типы животных</a></li>
+              <li><a class="dropdown-item" href="/animals/admin/breeds/"><i class="bi bi-list-ul"></i> Породы</a></li>
+              <li><a class="dropdown-item" href="/animals/admin/characters/"><i class="bi bi-emoji-smile"></i> Характеры</a></li>
+              <li><a class="dropdown-item" href="/animals/admin/shelters/"><i class="bi bi-building"></i> Приюты</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/animals/medical/records/"><i class="bi bi-heart-pulse"></i> Медицинские записи</a></li>
+              <li><a class="dropdown-item" href="/animals/vaccinations/"><i class="bi bi-shield-check"></i> Вакцинации</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/news/admin/"><i class="bi bi-newspaper"></i> Управление новостями</a></li>
+              <li><a class="dropdown-item" href="/accounts/admin/"><i class="bi bi-people"></i> Управление пользователями</a></li>
+            </ul>
+            </li>
+          {% elif auth_user.role == 'Manager' %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle {% if '/news/admin' in request.path or '/accounts/manager' in request.path or '/accounts/statistics' in request.path or '/accounts/manager/applications' in request.path or '/accounts/manager/donations' in request.path or '/animals/manager/cards' in request.path or '/animals/medical' in request.path or '/animals/vaccinations' in request.path %}active{% endif %}" 
+                 href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-gear"></i> Панель менеджера
+              </a>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="/animals/manager/cards/"><i class="bi bi-collection"></i> Картотека животных</a></li>
+                <li><a class="dropdown-item" href="/animals/manager/cards/all/"><i class="bi bi-eye"></i> Просмотр животных всех приютов</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="/animals/medical/records/"><i class="bi bi-heart-pulse"></i> Медицинские записи</a></li>
+                <li><a class="dropdown-item" href="/animals/vaccinations/"><i class="bi bi-shield-check"></i> Вакцинации</a></li>
+                <li><a class="dropdown-item" href="/animals/calendar/"><i class="bi bi-calendar-event"></i> Календарь прививок</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="/news/admin/"><i class="bi bi-newspaper"></i> Управление новостями</a></li>
+                <li><a class="dropdown-item" href="/accounts/manager/"><i class="bi bi-people"></i> Просмотр пользователей</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="/accounts/manager/applications/"><i class="bi bi-file-check"></i> Заявки на усыновление</a></li>
+                <li><a class="dropdown-item" href="/accounts/manager/donations/"><i class="bi bi-cash-coin"></i> Пожертвования</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="/accounts/statistics/"><i class="bi bi-bar-chart"></i> Статистика</a></li>
+              </ul>
+            </li>
+          {% endif %}
+          <li class="nav-item ms-2 position-relative">
+            <a class="nav-link {% if '/messages' in request.path %}active{% endif %}" href="/messages/" title="Сообщения">
+              <span class="d-inline-flex align-items-center justify-content-center" style="width:24px;height:24px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M4 4h16a1 1 0 0 1 .9 1.43l-7.2 7.2a2 2 0 0 1-2.84 0L3.1 5.43A1 1 0 0 1 4 4Zm16 16H4a2 2 0 0 1-2-2V7.4l7.17 7.17a4 4 0 0 0 5.66 0L22 7.4V18a2 2 0 0 1-2 2Z"/></svg>
+              </span>
+            </a>
+            {% if unread_messages %}
+              {% if unread_messages|add:0 > 0 %}
+              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.7rem;min-width:18px;padding:2px 6px;">{{ unread_messages }}</span>
+              {% endif %}
+            {% endif %}
+          </li>
+          <li class="nav-item ms-2 d-flex align-items-center gap-2">
+            <a href="/accounts/profile/" class="d-inline-flex align-items-center justify-content-center text-decoration-none" title="{{ auth_user.full_name }}" style="width:36px;height:36px;border-radius:999px;background:rgba(240,138,36,.12);color:#2b1d16;overflow:hidden;">
+              {% if auth_user.avatar_url %}
+                <img src="{{ auth_user.avatar_url }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+              {% else %}
+                <span class="fw-bold" style="font-size:14px;">{{ auth_user.initial }}</span>
+              {% endif %}
+            </a>
+            <a class="nav-link" href="/accounts/logout/">Выйти</a>
+          </li>
+        {% else %}
+          <li class="nav-item"><a class="nav-link" href="/accounts/login/">Вход</a></li>
+          <li class="nav-item"><a class="nav-link" href="/accounts/register/">Регистрация</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+
+{% block hero %}{% endblock %}
+
+<main class="container py-4 flex-grow-1">
+    {% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer mt-auto">
+  <div class="container py-5">
+    <div class="row g-4">
+      <!-- О приюте -->
+      <div class="col-md-6 col-lg-3">
+        <h5 class="fw-bold mb-3" style="color: #2b1d16;">
+          <i class="bi bi-heart-fill text-warning me-2"></i>Анималити
+        </h5>
+        <p class="small text-muted mb-3" style="line-height: 1.6;">
+          Приют для животных, где каждый питомец получает заботу и любовь. Мы помогаем найти новый дом каждому другу.
+        </p>
+        <div class="d-flex gap-2">
+          <a href="#" class="text-decoration-none" style="color: #F08A24;" title="VKontakte">
+            <i class="bi bi-vk fs-5"></i>
+          </a>
+          <a href="#" class="text-decoration-none" style="color: #F08A24;" title="Telegram">
+            <i class="bi bi-telegram fs-5"></i>
+          </a>
+          <a href="#" class="text-decoration-none" style="color: #F08A24;" title="Instagram">
+            <i class="bi bi-instagram fs-5"></i>
+          </a>
+        </div>
+      </div>
+      
+      <!-- Быстрые ссылки -->
+      <div class="col-md-6 col-lg-3">
+        <h6 class="fw-semibold mb-3" style="color: #2b1d16;">Быстрые ссылки</h6>
+        <ul class="list-unstyled small mb-0">
+          <li class="mb-2">
+            <a href="/animals/catalog/" class="text-decoration-none text-muted d-flex align-items-center">
+              <i class="bi bi-chevron-right me-2" style="font-size: 0.7rem; color: #F08A24;"></i>
+              Наши питомцы
+            </a>
+          </li>
+          <li class="mb-2">
+            <a href="/news/" class="text-decoration-none text-muted d-flex align-items-center">
+              <i class="bi bi-chevron-right me-2" style="font-size: 0.7rem; color: #F08A24;"></i>
+              Новости
+            </a>
+          </li>
+          <li class="mb-2">
+            <a href="/help/" class="text-decoration-none text-muted d-flex align-items-center">
+              <i class="bi bi-chevron-right me-2" style="font-size: 0.7rem; color: #F08A24;"></i>
+              Как помочь
+            </a>
+          </li>
+          {% if not auth_user %}
+          <li class="mb-2">
+            <a href="/accounts/login/" class="text-decoration-none text-muted d-flex align-items-center">
+              <i class="bi bi-chevron-right me-2" style="font-size: 0.7rem; color: #F08A24;"></i>
+              Вход
+            </a>
+          </li>
+          {% endif %}
+        </ul>
+      </div>
+      
+      <!-- Контакты -->
+      <div class="col-md-6 col-lg-3">
+        <h6 class="fw-semibold mb-3" style="color: #2b1d16;">Контакты</h6>
+        <ul class="list-unstyled small mb-0">
+          {% if active_shelters %}
+            {% for sh in active_shelters %}
+              {% if sh.address %}
+              <li class="mb-2 d-flex align-items-start">
+                <i class="bi bi-geo-alt-fill me-2 mt-1" style="color: #F08A24;"></i>
+                <span class="text-muted"><strong>{{ sh.shelter_name }}:</strong> {{ sh.address }}</span>
+              </li>
+              {% else %}
+              <li class="mb-2 d-flex align-items-start">
+                <i class="bi bi-geo-alt-fill me-2 mt-1" style="color: #F08A24;"></i>
+                <span class="text-muted"><strong>{{ sh.shelter_name }}</strong></span>
+              </li>
+              {% endif %}
+            {% endfor %}
+          {% else %}
+            <li class="mb-2 d-flex align-items-start">
+              <i class="bi bi-geo-alt-fill me-2 mt-1" style="color: #F08A24;"></i>
+              <span class="text-muted">Адреса приютов недоступны</span>
+            </li>
+          {% endif %}
+          <li class="mb-2 d-flex align-items-center">
+            <i class="bi bi-telephone-fill me-2" style="color: #F08A24;"></i>
+            <a href="tel:+79991234567" class="text-decoration-none text-muted">+7 (999) 123-45-67</a>
+          </li>
+          <li class="mb-2 d-flex align-items-center">
+            <i class="bi bi-envelope-fill me-2" style="color: #F08A24;"></i>
+            <a href="mailto:info@animality.ru" class="text-decoration-none text-muted">info@animality.ru</a>
+          </li>
+          <li class="mb-2 d-flex align-items-center">
+            <i class="bi bi-clock-fill me-2" style="color: #F08A24;"></i>
+            <span class="text-muted">Ежедневно: 9:00 - 20:00</span>
+          </li>
+        </ul>
+      </div>
+      
+      <!-- Поддержка -->
+      <div class="col-md-6 col-lg-3">
+        <h6 class="fw-semibold mb-3" style="color: #2b1d16;">Как помочь</h6>
+        <ul class="list-unstyled small mb-0">
+          <li class="mb-2 d-flex align-items-center">
+            <i class="bi bi-heart-fill me-2" style="color: #F08A24;"></i>
+            <a href="/help/" class="text-decoration-none text-muted">Усыновить питомца</a>
+          </li>
+          <li class="mb-2 d-flex align-items-center">
+            <i class="bi bi-cash-coin me-2" style="color: #F08A24;"></i>
+            <a href="/help/" class="text-decoration-none text-muted">Сделать пожертвование</a>
+          </li>
+          <li class="mb-2 d-flex align-items-center">
+            <i class="bi bi-share-fill me-2" style="color: #F08A24;"></i>
+            <a href="/help/" class="text-decoration-none text-muted">Рассказать друзьям</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+    
+    <!-- Разделитель -->
+    <hr class="my-4" style="border-color: #e5e0db; opacity: 0.5;">
+    
+    <!-- Копирайт -->
+    <div class="row align-items-center">
+      <div class="col-md-6 mb-3 mb-md-0">
+        <p class="small text-muted mb-0">
+          © {% now 'Y' %} Анималити. Все права защищены.
+        </p>
+      </div>
+      <div class="col-md-6 text-md-end">
+        <p class="small text-muted mb-0">
+          <i class="bi bi-heart-fill text-warning"></i> Сделано с любовью к животным
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Универсальный модал подтверждения действий (замена confirm/alert) -->
+<div class="modal fade" id="confirmActionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg" style="border-radius:16px; overflow:hidden; border:none;">
+      <div class="modal-header border-0" style="background:#FFF7EF;">
+        <h5 class="modal-title fw-bold" style="color:#2b1d16;">Подтверждение</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" style="color:#2b1d16;">
+        <p class="mb-0" id="confirmActionModalText">Вы уверены?</p>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-danger" id="confirmActionModalOk">Удалить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const modalEl = document.getElementById('confirmActionModal');
+    if (!modalEl || !window.bootstrap) return;
+
+    const modal = new bootstrap.Modal(modalEl);
+    const textEl = document.getElementById('confirmActionModalText');
+    const okBtn = document.getElementById('confirmActionModalOk');
+
+    let pendingForm = null;
+
+    document.addEventListener('submit', function (e) {
+      const form = e.target;
+      if (!form || !form.classList || !form.classList.contains('js-confirm-submit')) return;
+      e.preventDefault();
+
+      pendingForm = form;
+      const msg = form.getAttribute('data-confirm') || 'Вы уверены?';
+      const okText = form.getAttribute('data-confirm-ok') || 'Подтвердить';
+      if (textEl) textEl.textContent = msg;
+      if (okBtn) okBtn.textContent = okText;
+      modal.show();
+    });
+
+    okBtn?.addEventListener('click', function () {
+      if (!pendingForm) return;
+      const form = pendingForm;
+      pendingForm = null;
+      modal.hide();
+      form.submit();
+    });
+  })();
+</script>
+
+<!-- Модальное окно для неавторизованных пользователей -->
+<div id="authRequiredModal" class="modal fade" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg" style="border-radius:20px; overflow:hidden; border:none;">
+      <div class="modal-header border-0 text-center d-block" style="background:linear-gradient(135deg, #FFF7EF 0%, #FFE8D6 100%); padding:2rem 1.5rem 1rem;">
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="mb-3">
+          <div style="width:80px; height:80px; margin:0 auto; background:linear-gradient(135deg, #F08A24 0%, #FF6B35 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(240, 138, 36, 0.3);">
+            <i class="bi bi-lock-fill text-white" style="font-size: 42px;"></i>
+          </div>
+        </div>
+        <h4 class="modal-title fw-bold mb-2" style="color:#2b1d16;">Требуется авторизация</h4>
+      </div>
+      <div class="modal-body text-center py-4 px-4">
+        <p class="lead mb-3" style="color:#2b1d16; font-size:1.1rem;">
+          Для выполнения этого действия необходимо войти в систему
+        </p>
+        <div class="bg-light rounded p-3 mb-3" style="border-left:4px solid #F08A24;">
+          <p class="text-muted mb-0 small">
+            <i class="bi bi-info-circle text-primary"></i> 
+            Войдите в аккаунт или зарегистрируйтесь, чтобы продолжить
+          </p>
+        </div>
+        <div class="d-flex gap-2 justify-content-center mt-4">
+          <a class="btn btn-primary" href="/accounts/login/" style="border-radius:10px;">
+            <i class="bi bi-box-arrow-in-right"></i> Войти
+          </a>
+          <a class="btn btn-outline-secondary" href="/accounts/register/" style="border-radius:10px;">
+            <i class="bi bi-person-plus"></i> Зарегистрироваться
+          </a>
+        </div>
+      </div>
+      <div class="modal-footer border-0 justify-content-center pb-4">
+        <button type="button" class="btn btn-warning px-5 fw-semibold" data-bs-dismiss="modal" style="border-radius:10px; box-shadow:0 4px 12px rgba(240, 138, 36, 0.3);">
+          Понятно
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Глобальная функция для показа модального окна авторизации
+  function showAuthRequiredModal() {
+    const authModalEl = document.getElementById('authRequiredModal');
+    if (authModalEl) {
+      const authModal = new bootstrap.Modal(authModalEl);
+      authModal.show();
+    }
+  }
+  
+  // Проверка авторизации через AJAX (опционально, для проверки без перезагрузки)
+  // Эта функция может быть использована для динамической проверки авторизации
+  function checkAuthAndExecute(callback) {
+    // Простая проверка: если auth_user не определен в контексте, значит не авторизован
+    {% if not auth_user %}
+      showAuthRequiredModal();
+      return;
+    {% endif %}
+    if (callback) callback();
+  }
+  
+  // Функция для показа модального окна с ошибкой
+  function showErrorModal(errorMessage) {
+    const errorModalEl = document.getElementById('errorModal');
+    if (errorModalEl) {
+      const errorModal = new bootstrap.Modal(errorModalEl);
+      const errorText = errorModalEl.querySelector('#errorModalText');
+      if (errorText) {
+        errorText.textContent = errorMessage;
+      }
+      errorModal.show();
+    }
+  }
+</script>
+
+<!-- Модальное окно для ошибок -->
+<div id="errorModal" class="modal fade" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg" style="border-radius:20px; overflow:hidden; border:none;">
+      <div class="modal-header border-0 text-center d-block" style="background:linear-gradient(135deg, #FFF7EF 0%, #FFE8D6 100%); padding:2rem 1.5rem 1rem;">
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="mb-3">
+          <div style="width:80px; height:80px; margin:0 auto; background:linear-gradient(135deg, #dc3545 0%, #c82333 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(220, 53, 69, 0.3);">
+            <i class="bi bi-exclamation-triangle-fill text-white" style="font-size: 42px;"></i>
+          </div>
+        </div>
+        <h4 class="modal-title fw-bold mb-2" style="color:#2b1d16;">Ошибка</h4>
+      </div>
+      <div class="modal-body text-center py-4 px-4">
+        <p class="lead mb-3" id="errorModalText" style="color:#2b1d16; font-size:1.1rem;">
+          Произошла ошибка
+        </p>
+      </div>
+      <div class="modal-footer border-0 justify-content-center pb-4">
+        <button type="button" class="btn btn-danger px-5 fw-semibold" data-bs-dismiss="modal" style="border-radius:10px; box-shadow:0 4px 12px rgba(220, 53, 69, 0.3);">
+          Понятно
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  // Универсальная валидация форм - добавляет классы is-invalid при ошибках
+  (function() {
+    // Функция валидации email
+    function validateEmail(value) {
+      if (!value) return true; // Пустое значение проверяется required
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(value);
+    }
+    
+    // Функция валидации имени/фамилии (без цифр и спецсимволов, минимум 3 символа для пользователей)
+    function validateName(value, minLength = 1) {
+      if (!value) return true; // Пустое значение проверяется required
+      // Проверяем длину
+      if (value.length < minLength) return false;
+      // Проверяем, что нет цифр и спецсимволов (разрешены только буквы, пробелы, дефисы, апострофы)
+      return /^[а-яА-ЯёЁa-zA-Z\s\-\']+$/.test(value);
+    }
+    
+    // Функция валидации поиска по имени (без цифр и спецсимволов)
+    function validateNameSearch(value) {
+      if (!value) return true; // Пустой поиск допустим
+      // Проверяем, что нет цифр и спецсимволов (кроме пробелов)
+      return /^[а-яА-ЯёЁa-zA-Z\s]+$/.test(value);
+    }
+    
+    // Функция валидации для названий (характер, порода, тип) - без цифр и спецсимволов
+    function validateTitle(value) {
+      if (!value) return true; // Пустое значение проверяется required
+      // Разрешены буквы, пробелы, дефисы, апострофы
+      return /^[а-яА-ЯёЁa-zA-Z\s\-\']+$/.test(value);
+    }
+    
+    // Обработка всех форм на странице
+    document.addEventListener('DOMContentLoaded', function() {
+      const forms = document.querySelectorAll('form');
+      
+      forms.forEach(function(form) {
+        // Валидация при отправке
+        form.addEventListener('submit', function(event) {
+          let isValid = true;
+          
+          // Добавляем класс валидации ко всем полям
+          const inputs = form.querySelectorAll('input, select, textarea');
+          inputs.forEach(function(input) {
+            let fieldValid = true;
+            
+            // Специальная валидация для email
+            if (input.type === 'email' || (input.name === 'email' || (input.name === 'login' && input.id === 'loginInput' && mode === 'email'))) {
+              if (input.value && !validateEmail(input.value)) {
+                fieldValid = false;
+                input.setCustomValidity('Введите корректный email адрес (например: name@example.com)');
+              } else {
+                input.setCustomValidity('');
+              }
+            }
+            
+            // Специальная валидация для имен и фамилий пользователей (минимум 3 символа)
+            if ((input.name === 'first_name' || input.name === 'last_name') && input.type === 'text') {
+              if (input.value && !validateName(input.value, 3)) {
+                fieldValid = false;
+                const errorMsg = input.value.length < 3 
+                  ? 'Имя должно содержать минимум 3 символа'
+                  : 'Имя не должно содержать цифры и спецсимволы';
+                input.setCustomValidity(errorMsg);
+              } else {
+                input.setCustomValidity('');
+              }
+            }
+            
+            // Специальная валидация для имени животного (минимум 1 символ)
+            if (input.name === 'animal_name' && input.type === 'text') {
+              if (input.value && !validateName(input.value, 1)) {
+                fieldValid = false;
+                input.setCustomValidity('Имя не должно содержать цифры и спецсимволы');
+              } else {
+                input.setCustomValidity('');
+              }
+            }
+            
+            // Специальная валидация для поиска по имени (в фильтрах)
+            if (input.name === 'q' && input.type === 'text' && input.placeholder && (input.placeholder.includes('имя') || input.placeholder.includes('Имя'))) {
+              if (input.value && !validateNameSearch(input.value)) {
+                fieldValid = false;
+                input.setCustomValidity('Поиск по имени не должен содержать цифры и спецсимволы');
+              } else {
+                input.setCustomValidity('');
+              }
+            }
+            
+            // Валидация для названий (характер, порода, тип)
+            if ((input.name === 'character_name' || input.name === 'breed_name' || input.name === 'type_name' || 
+                 input.name === 'condition_name' || input.name === 'treatment' || input.name === 'notes') && input.type === 'text') {
+              if (input.value && !validateTitle(input.value)) {
+                fieldValid = false;
+                input.setCustomValidity('Поле не должно содержать цифры и спецсимволы (кроме пробелов, дефисов и апострофов)');
+              } else {
+                input.setCustomValidity('');
+              }
+            }
+            
+            // Проверка стандартной валидации
+            if (!input.checkValidity() || !fieldValid) {
+              input.classList.add('is-invalid');
+              input.classList.remove('is-valid');
+              isValid = false;
+            } else {
+              input.classList.remove('is-invalid');
+              input.classList.add('is-valid');
+            }
+          });
+          
+          if (!isValid) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          
+          form.classList.add('was-validated');
+        });
+        
+        // Валидация в реальном времени для всех полей
+        const inputs = form.querySelectorAll('input, select, textarea');
+        inputs.forEach(function(input) {
+          input.addEventListener('blur', function() {
+            let fieldValid = true;
+            
+            // Специальная валидация для email
+            if (input.type === 'email' || (input.name === 'email' || (input.name === 'login' && input.id === 'loginInput' && mode === 'email'))) {
+              if (input.value && !validateEmail(input.value)) {
+                fieldValid = false;
+                input.setCustomValidity('Введите корректный email адрес');
+                let feedback = input.parentElement.querySelector('.invalid-feedback-custom');
+                if (!feedback) {
+                  feedback = document.createElement('div');
+                  feedback.className = 'invalid-feedback invalid-feedback-custom';
+                  input.parentElement.appendChild(feedback);
+                }
+                feedback.textContent = 'Введите корректный email адрес (например: name@example.com)';
+              } else {
+                input.setCustomValidity('');
+                const feedback = input.parentElement.querySelector('.invalid-feedback-custom');
+                if (feedback) feedback.remove();
+              }
+            }
+            
+            // Специальная валидация для имен и фамилий пользователей
+            if ((input.name === 'first_name' || input.name === 'last_name') && input.type === 'text') {
+              if (input.value && !validateName(input.value, 3)) {
+                fieldValid = false;
+                const errorMsg = input.value.length < 3 
+                  ? 'Имя должно содержать минимум 3 символа'
+                  : 'Имя не должно содержать цифры и спецсимволы';
+                input.setCustomValidity(errorMsg);
+                let feedback = input.parentElement.querySelector('.invalid-feedback-custom');
+                if (!feedback) {
+                  feedback = document.createElement('div');
+                  feedback.className = 'invalid-feedback invalid-feedback-custom';
+                  input.parentElement.appendChild(feedback);
+                }
+                feedback.textContent = errorMsg;
+              } else {
+                input.setCustomValidity('');
+                const feedback = input.parentElement.querySelector('.invalid-feedback-custom');
+                if (feedback) feedback.remove();
+              }
+            }
+            
+            // Специальная валидация для имени животного
+            if (input.name === 'animal_name' && input.type === 'text') {
+              if (input.value && !validateName(input.value, 1)) {
+                fieldValid = false;
+                input.setCustomValidity('Имя не должно содержать цифры и спецсимволы');
+                let feedback = input.parentElement.querySelector('.invalid-feedback-custom');
+                if (!feedback) {
+                  feedback = document.createElement('div');
+                  feedback.className = 'invalid-feedback invalid-feedback-custom';
+                  input.parentElement.appendChild(feedback);
+                }
+                feedback.textContent = 'Имя не должно содержать цифры и спецсимволы';
+              } else {
+                input.setCustomValidity('');
+                const feedback = input.parentElement.querySelector('.invalid-feedback-custom');
+                if (feedback) feedback.remove();
+              }
+            }
+            
+            // Специальная валидация для поиска по имени
+            if (input.name === 'q' && input.type === 'text' && input.placeholder && (input.placeholder.includes('имя') || input.placeholder.includes('Имя'))) {
+              if (input.value && !validateNameSearch(input.value)) {
+                fieldValid = false;
+                input.setCustomValidity('Поиск по имени не должен содержать цифры и спецсимволы');
+                let feedback = input.parentElement.querySelector('.invalid-feedback-custom');
+                if (!feedback) {
+                  feedback = document.createElement('div');
+                  feedback.className = 'invalid-feedback invalid-feedback-custom';
+                  input.parentElement.appendChild(feedback);
+                }
+                feedback.textContent = 'Поиск по имени не должен содержать цифры и спецсимволы';
+              } else {
+                input.setCustomValidity('');
+                const feedback = input.parentElement.querySelector('.invalid-feedback-custom');
+                if (feedback) feedback.remove();
+              }
+            }
+            
+            // Валидация для названий (характер, порода, тип)
+            if ((input.name === 'character_name' || input.name === 'breed_name' || input.name === 'type_name' || 
+                 input.name === 'condition_name' || input.name === 'treatment' || input.name === 'notes') && input.type === 'text') {
+              if (input.value && !validateTitle(input.value)) {
+                fieldValid = false;
+                input.setCustomValidity('Поле не должно содержать цифры и спецсимволы');
+                let feedback = input.parentElement.querySelector('.invalid-feedback-custom');
+                if (!feedback) {
+                  feedback = document.createElement('div');
+                  feedback.className = 'invalid-feedback invalid-feedback-custom';
+                  input.parentElement.appendChild(feedback);
+                }
+                feedback.textContent = 'Поле не должно содержать цифры и спецсимволы (кроме пробелов, дефисов и апострофов)';
+              } else {
+                input.setCustomValidity('');
+                const feedback = input.parentElement.querySelector('.invalid-feedback-custom');
+                if (feedback) feedback.remove();
+              }
+            }
+            
+            if (input.checkValidity() && fieldValid) {
+              input.classList.remove('is-invalid');
+              input.classList.add('is-valid');
+            } else {
+              input.classList.remove('is-valid');
+              input.classList.add('is-invalid');
+            }
+          });
+          
+          input.addEventListener('input', function() {
+            // Специальная валидация для email
+            if (input.type === 'email' || (input.name === 'email' || (input.name === 'login' && input.id === 'loginInput' && mode === 'email'))) {
+              if (input.value && !validateEmail(input.value)) {
+                input.setCustomValidity('Введите корректный email адрес');
+                input.classList.add('is-invalid');
+                input.classList.remove('is-valid');
+              } else {
+                input.setCustomValidity('');
+                if (input.classList.contains('is-invalid')) {
+                  const feedback = input.parentElement.querySelector('.invalid-feedback-custom');
+                  if (feedback) feedback.remove();
+                  input.classList.remove('is-invalid');
+                  input.classList.add('is-valid');
+                }
+              }
+            }
+            
+            // Специальная валидация для имен и фамилий пользователей
+            if ((input.name === 'first_name' || input.name === 'last_name') && input.type === 'text') {
+              if (input.value && !validateName(input.value, 3)) {
+                const errorMsg = input.value.length < 3 
+                  ? 'Имя должно содержать минимум 3 символа'
+                  : 'Имя не должно содержать цифры и спецсимволы';
+                input.setCustomValidity(errorMsg);
+                input.classList.add('is-invalid');
+                input.classList.remove('is-valid');
+              } else {
+                input.setCustomValidity('');
+                if (input.classList.contains('is-invalid')) {
+                  const feedback = input.parentElement.querySelector('.invalid-feedback-custom');
+                  if (feedback) feedback.remove();
+                  input.classList.remove('is-invalid');
+                  input.classList.add('is-valid');
+                }
+              }
+            }
+            
+            // Специальная валидация для имени животного
+            if (input.name === 'animal_name' && input.type === 'text') {
+              if (input.value && !validateName(input.value, 1)) {
+                input.setCustomValidity('Имя не должно содержать цифры и спецсимволы');
+                input.classList.add('is-invalid');
+                input.classList.remove('is-valid');
+              } else {
+                input.setCustomValidity('');
+                if (input.classList.contains('is-invalid')) {
+                  const feedback = input.parentElement.querySelector('.invalid-feedback-custom');
+                  if (feedback) feedback.remove();
+                  input.classList.remove('is-invalid');
+                  input.classList.add('is-valid');
+                }
+              }
+            }
+            
+            // Специальная валидация для поиска
+            if (input.name === 'q' && input.type === 'text' && input.placeholder && (input.placeholder.includes('имя') || input.placeholder.includes('Имя'))) {
+              if (input.value && !validateNameSearch(input.value)) {
+                input.setCustomValidity('Поиск по имени не должен содержать цифры и спецсимволы');
+                input.classList.add('is-invalid');
+                input.classList.remove('is-valid');
+              } else {
+                input.setCustomValidity('');
+                if (input.classList.contains('is-invalid')) {
+                  const feedback = input.parentElement.querySelector('.invalid-feedback-custom');
+                  if (feedback) feedback.remove();
+                  input.classList.remove('is-invalid');
+                  input.classList.add('is-valid');
+                }
+              }
+            }
+            
+            // Валидация для названий (характер, порода, тип)
+            if ((input.name === 'character_name' || input.name === 'breed_name' || input.name === 'type_name' || 
+                 input.name === 'condition_name' || input.name === 'treatment' || input.name === 'notes') && input.type === 'text') {
+              if (input.value && !validateTitle(input.value)) {
+                input.setCustomValidity('Поле не должно содержать цифры и спецсимволы');
+                input.classList.add('is-invalid');
+                input.classList.remove('is-valid');
+              } else {
+                input.setCustomValidity('');
+                if (input.classList.contains('is-invalid')) {
+                  const feedback = input.parentElement.querySelector('.invalid-feedback-custom');
+                  if (feedback) feedback.remove();
+                  input.classList.remove('is-invalid');
+                  input.classList.add('is-valid');
+                }
+              }
+            }
+            
+            // Общая валидация для остальных полей
+            if (input.classList.contains('is-invalid') && input.checkValidity() && 
+                !(input.name === 'first_name' || input.name === 'last_name' || input.name === 'animal_name' || input.name === 'q' ||
+                  input.name === 'email' || input.name === 'character_name' || input.name === 'breed_name' || input.name === 'type_name' ||
+                  input.name === 'condition_name' || input.name === 'treatment' || input.name === 'notes')) {
+              input.classList.remove('is-invalid');
+              input.classList.add('is-valid');
+            }
+          });
+        });
+      });
+    });
+  })();
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

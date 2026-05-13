@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load tz %}
+{% block title %}Заявка №{{ app.id }} — Анималити{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Заявка №{{ app.id }}</h2>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="/accounts/profile/?tab=applications">К списку</a>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="text-muted small">Питомец</div>
+          <div class="fw-semibold">{{ app.animal }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Дата</div>
+          <div class="fw-semibold">{{ app.date|localtime|date:'d.m.Y H:i' }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Статус</div>
+          <span class="badge bg-{{ app.status_class }}">{{ app.status }}</span>
+        </div>
+        <div class="col-12"><hr></div>
+        <div class="col-md-6">
+          <div class="text-muted small">Причина</div>
+          <div>{{ app.reason|default:'—' }}</div>
+        </div>
+        <div class="col-md-6">
+          <div class="text-muted small">Опыт</div>
+          <div>{{ app.experience|default:'—' }}</div>
+        </div>
+        <div class="col-md-6">
+          <div class="text-muted small">Условия проживания</div>
+          <div>{{ app.housing|default:'—' }}</div>
+        </div>
+        <div class="col-md-6">
+          <div class="text-muted small">Комментарий</div>
+          <div>{{ app.comment|default:'—' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
