@@ -90,7 +90,7 @@ def seed_dictionaries():
     """)
     print('[OK] Характеры животных добавлены')
     
-    # 5. Породы животных (только самые нужные)
+    # 5. Породы животных
     execute_raw_sql("""
         INSERT INTO breeds (breedname, typeid) 
         SELECT breedname, typeid FROM (VALUES 
@@ -102,12 +102,12 @@ def seed_dictionaries():
     """)
     print('[OK] Породы животных добавлены')
     
-    # 6. Приюты (указываем ТОЛЬКО поля, которые есть в таблице и не трогаем createddate)
+    # 6. Приюты (явно указываем createddate)
     execute_raw_sql("""
-        INSERT INTO shelters (sheltername, address, phone, email, description, isactive) VALUES 
-        ('Центральный приют', 'г. Москва, ул. Приютская, д. 1', '+74951234567', 'central@shelter.ru', 'Главный приют города', true),
-        ('Приют "Доброе сердце"', 'г. Санкт-Петербург, ул. Заботливая, д. 15', '+78121234567', 'dobroe@shelter.ru', 'Приют для кошек и собак', true),
-        ('Приют "Верный друг"', 'г. Новосибирск, ул. Сибирская, д. 10', '+73831234567', 'verniy@shelter.ru', 'Работаем с 2010 года', true)
+        INSERT INTO shelters (sheltername, address, phone, email, description, isactive, createddate) VALUES 
+        ('Центральный приют', 'г. Москва, ул. Приютская, д. 1', '+74951234567', 'central@shelter.ru', 'Главный приют города', true, now()),
+        ('Приют "Доброе сердце"', 'г. Санкт-Петербург, ул. Заботливая, д. 15', '+78121234567', 'dobroe@shelter.ru', 'Приют для кошек и собак', true, now()),
+        ('Приют "Верный друг"', 'г. Новосибирск, ул. Сибирская, д. 10', '+73831234567', 'verniy@shelter.ru', 'Работаем с 2010 года', true, now())
         ON CONFLICT (sheltername) DO NOTHING;
     """)
     print('[OK] Приюты добавлены')
