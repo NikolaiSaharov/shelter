@@ -1,75 +1,221 @@
 #!/usr/bin/env python
-"""Скрипт для создания администратора"""
+"""Скрипт для заполнения базы данных начальными данными"""
 import os
 import sys
+import time
 import django
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'shelter_project.settings')
 django.setup()
 
+from django.db import connection
 from accounts.models import User, Role, UserProfile
 from accounts.utils import hash_password_sha256, normalize_phone
 
-EMAIL = "admin@test.com"
-PASSWORD = "admin123"
-FIRST_NAME = "Админ"
-LAST_NAME = "Тестовый"
-PHONE = "+79999999999"
+# =========================================================
+# ДАННЫЕ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ
+# =========================================================
 
-def create_admin():
-    admin_role, created = Role.objects.get_or_create(
-        role_name='Admin',
-        defaults={'role_name': 'Admin'}
-    )
+USERS_DATA = [
+    {
+        'email': 'admin@test.com',
+        'password': 'admin123',
+        'first_name': 'Админ',
+        'last_name': 'Тестовый',
+        'phone': '+79999999999',
+        'role': 'Admin'
+    },
+    {
+        'email': 'manager@test.com',
+        'password': 'manager123',
+        'first_name': 'Иван',
+        'last_name': 'Менеджеров',
+        'phone': '+79999999998',
+        'role': 'Manager'
+    },
+    {
+        'email': 'guest@test.com',
+        'password': 'guest123',
+        'first_name': 'Петр',
+        'last_name': 'Гостевой',
+        'phone': '+79999999997',
+        'role': 'Guest'
+    }
+]
+
+# =========================================================
+# ДАННЫЕ ДЛЯ СПРАВОЧНИКОВ (RAW SQL)
+# =========================================================
+
+def execute_raw_sql(sql):
+    """Выполняет сырой SQL-запрос"""
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+
+def seed_dictionaries():
+    """Заполняет справочные таблицы начальными данными (только те, которые точно есть в схеме)"""
     
-    if created:
-        print(f'[OK] Роль "Admin" создана (ID: {admin_role.role_id})')
-    else:
-        print(f'[OK] Роль "Admin" найдена (ID: {admin_role.role_id})')
+    # 1. Статусы животных
+    execute_raw_sql("""
+        INSERT INTO animalstatuses (statusname) VALUES 
+        ('Доступен'), ('Пристроен'), ('На рассмотрении')
+        ON CONFLICT (statusname) DO NOTHING;
+    """)
+    print('[OK] Статусы животных добавлены')
     
-    if User.objects.filter(email=EMAIL).exists():
-        print(f'[WARNING] Пользователь с email "{EMAIL}" уже существует!')
-        user = User.objects.get(email=EMAIL)
-        print(f'\nДанные существующего пользователя:')
-        print(f'  Email: {user.email}')
-        print(f'  Имя: {user.first_name} {user.last_name}')
-        print(f'  Роль: {user.role.role_name if user.role else "Нет роли"}')
-        print(f'  ID: {user.user_id}')
-        return
+    # 2. Статусы заявок
+    execute_raw_sql("""
+        INSERT INTO applicationstatuses (statusname) VALUES 
+        ('Pending'), ('Approved'), ('Rejected')
+        ON CONFLICT (statusname) DO NOTHING;
+    """)
+    print('[OK] Статусы заявок добавлены')
     
-    normalized_phone = normalize_phone(PHONE)
+    # 3. Типы животных
+    execute_raw_sql("""
+        INSERT INTO animaltypes (typename) VALUES 
+        ('Собака'), ('Кошка')
+        ON CONFLICT (typename) DO NOTHING;
+    """)
+    print('[OK] Типы животных добавлены')
     
-    try:
+    # 4. Характеры животных
+    execute_raw_sql("""
+        INSERT INTO animalcharacters (charactername, description) VALUES 
+        ('Дружелюбный', 'Ладит с людьми'),
+        ('Спокойный', 'Уравновешенный характер'),
+        ('Ласковый', 'Обожает внимание')
+        ON CONFLICT (charactername) DO NOTHING;
+    """)
+    print('[OK] Характеры животных добавлены')
+    
+    # 5. Породы животных
+    execute_raw_sql("""
+        INSERT INTO breeds (breedname, typeid) 
+        SELECT breedname, typeid FROM (VALUES 
+            ('Лабрадор', (SELECT typeid FROM animaltypes WHERE typename = 'Собака')),
+            ('Немецкая овчарка', (SELECT typeid FROM animaltypes WHERE typename = 'Собака')),
+            ('Британская', (SELECT typeid FROM animaltypes WHERE typename = 'Кошка'))
+        ) AS b(breedname, typeid)
+        WHERE NOT EXISTS (SELECT 1 FROM breeds WHERE breedname = b.breedname);
+    """)
+    print('[OK] Породы животных добавлены')
+    
+    # 6. Приюты (явно указываем createddate)
+    execute_raw_sql("""
+        INSERT INTO shelters (sheltername, address, phone, email, description, isactive, createddate) VALUES 
+        ('Центральный приют', 'г. Москва, ул. Приютская, д. 1', '+74951234567', 'central@shelter.ru', 'Главный приют города', true, now()),
+        ('Приют "Доброе сердце"', 'г. Санкт-Петербург, ул. Заботливая, д. 15', '+78121234567', 'dobroe@shelter.ru', 'Приют для кошек и собак', true, now()),
+        ('Приют "Верный друг"', 'г. Новосибирск, ул. Сибирская, д. 10', '+73831234567', 'verniy@shelter.ru', 'Работаем с 2010 года', true, now())
+        ON CONFLICT (sheltername) DO NOTHING;
+    """)
+    print('[OK] Приюты добавлены')
+
+def create_users():
+    """Создаёт пользователей с соответствующими ролями"""
+    for user_data in USERS_DATA:
+        try:
+            role = Role.objects.get(role_name=user_data['role'])
+        except Role.DoesNotExist:
+            print(f'[ERROR] Роль {user_data["role"]} не найдена!')
+            continue
+        
+        if User.objects.filter(email=user_data['email']).exists():
+            print(f'[OK] Пользователь {user_data["email"]} уже существует')
+            continue
+        
+        normalized_phone = normalize_phone(user_data['phone'])
+        
         user = User.objects.create(
-            email=EMAIL,
-            password_hash=hash_password_sha256(PASSWORD),
-            first_name=FIRST_NAME,
-            last_name=LAST_NAME,
+            email=user_data['email'],
+            password_hash=hash_password_sha256(user_data['password']),
+            first_name=user_data['first_name'],
+            last_name=user_data['last_name'],
             phone=normalized_phone,
-            role=admin_role,
+            role=role,
         )
         
         UserProfile.objects.get_or_create(user=user)
-        
-        print('\n' + '='*60)
-        print('[SUCCESS] АДМИНИСТРАТОР УСПЕШНО СОЗДАН!')
-        print('='*60)
-        print('\nДАННЫЕ ДЛЯ ВХОДА:')
-        print(f'   Email: {user.email}')
-        print(f'   Пароль: {PASSWORD}')
-        print(f'   Телефон: {normalized_phone}')
-        print('\nИНФОРМАЦИЯ:')
-        print(f'   Имя: {user.first_name} {user.last_name}')
-        print(f'   Роль: {user.role.role_name}')
-        print(f'   ID: {user.user_id}')
-        print('\n' + '='*60)
-        
-    except Exception as e:
-        print(f'[ERROR] Ошибка при создании пользователя: {str(e)}')
-        import traceback
-        traceback.print_exc()
+        print(f'[OK] Создан пользователь: {user_data["email"]} (роль: {user_data["role"]})')
+
+def add_test_animals():
+    """Добавляет тестовых животных для демонстрации"""
+    # Проверяем, есть ли уже животные
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT COUNT(*) FROM animals")
+        count = cursor.fetchone()[0]
+        if count > 0:
+            print('[OK] Животные уже есть в базе')
+            return
+    
+    execute_raw_sql("""
+        INSERT INTO animals (animalname, age, gender, vaccinated, description, statusid, breedid, characterid, shelterid)
+        SELECT 
+            'Бобик', 3, 'Male', true, 'Дружелюбный пёс, ищет дом', 
+            (SELECT statusid FROM animalstatuses WHERE statusname = 'Доступен'),
+            (SELECT breedid FROM breeds WHERE breedname = 'Лабрадор' LIMIT 1),
+            (SELECT characterid FROM animalcharacters WHERE charactername = 'Дружелюбный' LIMIT 1),
+            (SELECT shelterid FROM shelters LIMIT 1);
+    """)
+    
+    execute_raw_sql("""
+        INSERT INTO animals (animalname, age, gender, vaccinated, description, statusid, breedid, characterid, shelterid)
+        SELECT 
+            'Мурка', 2, 'Female', true, 'Ласковая кошечка, любит внимание',
+            (SELECT statusid FROM animalstatuses WHERE statusname = 'Доступен'),
+            (SELECT breedid FROM breeds WHERE breedname = 'Британская' LIMIT 1),
+            (SELECT characterid FROM animalcharacters WHERE charactername = 'Ласковый' LIMIT 1),
+            (SELECT shelterid FROM shelters LIMIT 1);
+    """)
+    
+    execute_raw_sql("""
+        INSERT INTO animals (animalname, age, gender, vaccinated, description, statusid, breedid, characterid, shelterid)
+        SELECT 
+            'Шарик', 5, 'Male', true, 'Верный друг, спокойный характер',
+            (SELECT statusid FROM animalstatuses WHERE statusname = 'На рассмотрении'),
+            (SELECT breedid FROM breeds WHERE breedname = 'Немецкая овчарка' LIMIT 1),
+            (SELECT characterid FROM animalcharacters WHERE charactername = 'Спокойный' LIMIT 1),
+            (SELECT shelterid FROM shelters LIMIT 1);
+    """)
+    
+    print('[OK] Добавлены тестовые животные')
+
+def main():
+    print("="*60)
+    print("ЗАПУСК СКРИПТА НАСТРОЙКИ БАЗЫ ДАННЫХ")
+    print("="*60)
+    
+    # Ждём готовности базы данных
+    print("\nОжидание 5 секунд...")
+    time.sleep(5)
+    
+    # Заполняем справочники
+    print("\n--- ЗАПОЛНЕНИЕ СПРАВОЧНИКОВ ---")
+    seed_dictionaries()
+    
+    # Создаём пользователей
+    print("\n--- СОЗДАНИЕ ПОЛЬЗОВАТЕЛЕЙ ---")
+    create_users()
+    
+    # Добавляем тестовых животных
+    print("\n--- ДОБАВЛЕНИЕ ТЕСТОВЫХ ЖИВОТНЫХ ---")
+    add_test_animals()
+    
+    # Итоговая информация
+    print("\n" + "="*60)
+    print("ГОТОВО! База данных заполнена:")
+    print("="*60)
+    print("\n👥 ПОЛЬЗОВАТЕЛИ:")
+    for user in USERS_DATA:
+        print(f"   {user['role']}: {user['email']} / {user['password']}")
+    
+    print("\n🐕 ТЕСТОВЫЕ ЖИВОТНЫЕ:")
+    print("   ✓ Бобик (Лабрадор, Доступен)")
+    print("   ✓ Мурка (Британская, Доступен)")
+    print("   ✓ Шарик (Немецкая овчарка, На рассмотрении)")
+    
+    print("\n" + "="*60)
 
 if __name__ == '__main__':
-    create_admin()
-
+    main()
