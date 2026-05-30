@@ -72,15 +72,7 @@ def seed_dictionaries():
     """)
     print('[OK] Статусы заявок добавлены')
     
-    # 3. Статусы встреч
-    execute_raw_sql("""
-        INSERT INTO meetingstatuses (statusname) VALUES 
-        ('Scheduled'), ('InProgress'), ('Completed'), ('Cancelled'), ('NoShow')
-        ON CONFLICT (statusname) DO NOTHING;
-    """)
-    print('[OK] Статусы встреч добавлены')
-    
-    # 4. Типы животных
+    # 3. Типы животных
     execute_raw_sql("""
         INSERT INTO animaltypes (typename) VALUES 
         ('Собака'), ('Кошка'), ('Птица'), ('Грызун'), ('Кролик'), ('Рептилия')
@@ -88,7 +80,7 @@ def seed_dictionaries():
     """)
     print('[OK] Типы животных добавлены')
     
-    # 5. Характеры животных
+    # 4. Характеры животных
     execute_raw_sql("""
         INSERT INTO animalcharacters (charactername, description) VALUES 
         ('Дружелюбный', 'Ладит с людьми и другими животными'),
@@ -102,45 +94,54 @@ def seed_dictionaries():
     """)
     print('[OK] Характеры животных добавлены')
     
-    # 6. Типы активностей (уход)
-    execute_raw_sql("""
-        INSERT INTO activitytypes (activityname, description) VALUES 
-        ('Кормление', 'Регулярное кормление животного'),
-        ('Выгул', 'Прогулка на свежем воздухе'),
-        ('Осмотр', 'Ветеринарный осмотр'),
-        ('Купание', 'Гигиенические процедуры'),
-        ('Прививка', 'Плановая вакцинация'),
-        ('Дрессировка', 'Занятия с кинологом')
-        ON CONFLICT (activityname) DO NOTHING;
-    """)
-    print('[OK] Типы активностей добавлены')
+    # 5. Типы активностей (уход) — если таблица существует
+    try:
+        execute_raw_sql("""
+            INSERT INTO activitytypes (activityname, description) VALUES 
+            ('Кормление', 'Регулярное кормление животного'),
+            ('Выгул', 'Прогулка на свежем воздухе'),
+            ('Осмотр', 'Ветеринарный осмотр'),
+            ('Купание', 'Гигиенические процедуры'),
+            ('Прививка', 'Плановая вакцинация'),
+            ('Дрессировка', 'Занятия с кинологом')
+            ON CONFLICT (activityname) DO NOTHING;
+        """)
+        print('[OK] Типы активностей добавлены')
+    except Exception as e:
+        print(f'[WARNING] Типы активностей не добавлены: {e}')
     
-    # 7. Типы частоты (уход)
-    execute_raw_sql("""
-        INSERT INTO frequencytypes (frequencyname, description) VALUES 
-        ('Ежедневно', 'Каждый день'),
-        ('Раз в неделю', 'Один раз в неделю'),
-        ('Два раза в неделю', 'Дважды в неделю'),
-        ('Ежемесячно', 'Раз в месяц'),
-        ('По требованию', 'По необходимости')
-        ON CONFLICT (frequencyname) DO NOTHING;
-    """)
-    print('[OK] Типы частоты добавлены')
+    # 6. Типы частоты (уход) — если таблица существует
+    try:
+        execute_raw_sql("""
+            INSERT INTO frequencytypes (frequencyname, description) VALUES 
+            ('Ежедневно', 'Каждый день'),
+            ('Раз в неделю', 'Один раз в неделю'),
+            ('Два раза в неделю', 'Дважды в неделю'),
+            ('Ежемесячно', 'Раз в месяц'),
+            ('По требованию', 'По необходимости')
+            ON CONFLICT (frequencyname) DO NOTHING;
+        """)
+        print('[OK] Типы частоты добавлены')
+    except Exception as e:
+        print(f'[WARNING] Типы частоты не добавлены: {e}')
     
-    # 8. Типы вакцинаций
-    execute_raw_sql("""
-        INSERT INTO vaccinationtypes (vaccinationname, description) VALUES 
-        ('Бешенство', 'Вакцинация от бешенства'),
-        ('Чума плотоядных', 'Вакцинация от чумы'),
-        ('Парвовирус', 'Вакцинация от парвовирусного энтерита'),
-        ('Лептоспироз', 'Вакцинация от лептоспироза'),
-        ('Калицивироз', 'Вакцинация от калицивироза (кошки)'),
-        ('Панлейкопения', 'Вакцинация от панлейкопении (кошки)')
-        ON CONFLICT (vaccinationname) DO NOTHING;
-    """)
-    print('[OK] Типы вакцинаций добавлены')
+    # 7. Типы вакцинаций — если таблица существует
+    try:
+        execute_raw_sql("""
+            INSERT INTO vaccinationtypes (vaccinationname, description) VALUES 
+            ('Бешенство', 'Вакцинация от бешенства'),
+            ('Чума плотоядных', 'Вакцинация от чумы'),
+            ('Парвовирус', 'Вакцинация от парвовирусного энтерита'),
+            ('Лептоспироз', 'Вакцинация от лептоспироза'),
+            ('Калицивироз', 'Вакцинация от калицивироза (кошки)'),
+            ('Панлейкопения', 'Вакцинация от панлейкопении (кошки)')
+            ON CONFLICT (vaccinationname) DO NOTHING;
+        """)
+        print('[OK] Типы вакцинаций добавлены')
+    except Exception as e:
+        print(f'[WARNING] Типы вакцинаций не добавлены: {e}')
     
-    # 9. Породы животных (примеры)
+    # 8. Породы животных
     execute_raw_sql("""
         INSERT INTO breeds (breedname, typeid) 
         SELECT breedname, typeid FROM (VALUES 
@@ -155,7 +156,7 @@ def seed_dictionaries():
     """)
     print('[OK] Породы животных добавлены')
     
-    # 10. Приюты
+    # 9. Приюты
     execute_raw_sql("""
         INSERT INTO shelters (sheltername, address, phone, email, description, isactive) VALUES 
         ('Центральный приют', 'г. Москва, ул. Приютская, д. 1', '+74951234567', 'central@shelter.ru', 'Главный приют города', true),
@@ -194,6 +195,14 @@ def create_users():
 
 def add_test_animals():
     """Добавляет тестовых животных для демонстрации"""
+    # Проверяем, есть ли уже животные
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT COUNT(*) FROM animals")
+        count = cursor.fetchone()[0]
+        if count > 0:
+            print('[OK] Животные уже есть в базе')
+            return
+    
     execute_raw_sql("""
         INSERT INTO animals (animalname, age, gender, vaccinated, description, statusid, breedid, characterid, shelterid)
         SELECT 
@@ -201,8 +210,7 @@ def add_test_animals():
             (SELECT statusid FROM animalstatuses WHERE statusname = 'Доступен'),
             (SELECT breedid FROM breeds WHERE breedname = 'Лабрадор' LIMIT 1),
             (SELECT characterid FROM animalcharacters WHERE charactername = 'Дружелюбный' LIMIT 1),
-            (SELECT shelterid FROM shelters LIMIT 1)
-        WHERE NOT EXISTS (SELECT 1 FROM animals WHERE animalname = 'Бобик');
+            (SELECT shelterid FROM shelters LIMIT 1);
     """)
     
     execute_raw_sql("""
@@ -212,8 +220,7 @@ def add_test_animals():
             (SELECT statusid FROM animalstatuses WHERE statusname = 'Доступен'),
             (SELECT breedid FROM breeds WHERE breedname = 'Британская' LIMIT 1),
             (SELECT characterid FROM animalcharacters WHERE charactername = 'Ласковый' LIMIT 1),
-            (SELECT shelterid FROM shelters LIMIT 1)
-        WHERE NOT EXISTS (SELECT 1 FROM animals WHERE animalname = 'Мурка');
+            (SELECT shelterid FROM shelters LIMIT 1);
     """)
     
     execute_raw_sql("""
@@ -223,8 +230,7 @@ def add_test_animals():
             (SELECT statusid FROM animalstatuses WHERE statusname = 'На рассмотрении'),
             (SELECT breedid FROM breeds WHERE breedname = 'Немецкая овчарка' LIMIT 1),
             (SELECT characterid FROM animalcharacters WHERE charactername = 'Спокойный' LIMIT 1),
-            (SELECT shelterid FROM shelters LIMIT 1)
-        WHERE NOT EXISTS (SELECT 1 FROM animals WHERE animalname = 'Шарик');
+            (SELECT shelterid FROM shelters LIMIT 1);
     """)
     
     print('[OK] Добавлены тестовые животные')
@@ -260,11 +266,10 @@ def main():
     
     print("\n📋 СПРАВОЧНИКИ:")
     print("   ✓ Статусы животных (Доступен, Пристроен, На рассмотрении)")
+    print("   ✓ Статусы заявок (Pending, Approved, Rejected)")
     print("   ✓ Типы и породы животных")
     print("   ✓ Характеры животных")
     print("   ✓ Приюты (3 шт.)")
-    print("   ✓ Типы активностей и частот")
-    print("   ✓ Типы вакцинаций")
     
     print("\n🐕 ТЕСТОВЫЕ ЖИВОТНЫЕ:")
     print("   ✓ Бобик (Лабрадор, Доступен)")
