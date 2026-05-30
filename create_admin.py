@@ -54,7 +54,7 @@ def execute_raw_sql(sql):
         cursor.execute(sql)
 
 def seed_dictionaries():
-    """Заполняет справочные таблицы начальными данными"""
+    """Заполняет справочные таблицы начальными данными (только те, которые точно есть в схеме)"""
     
     # 1. Статусы животных
     execute_raw_sql("""
@@ -75,7 +75,7 @@ def seed_dictionaries():
     # 3. Типы животных
     execute_raw_sql("""
         INSERT INTO animaltypes (typename) VALUES 
-        ('Собака'), ('Кошка'), ('Птица'), ('Грызун'), ('Кролик'), ('Рептилия')
+        ('Собака'), ('Кошка')
         ON CONFLICT (typename) DO NOTHING;
     """)
     print('[OK] Типы животных добавлены')
@@ -83,80 +83,26 @@ def seed_dictionaries():
     # 4. Характеры животных
     execute_raw_sql("""
         INSERT INTO animalcharacters (charactername, description) VALUES 
-        ('Дружелюбный', 'Ладит с людьми и другими животными'),
-        ('Активный', 'Любит гулять и играть'),
-        ('Спокойный', 'Предпочитает тишину и покой'),
-        ('Ласковый', 'Обожает внимание и ласку'),
-        ('Осторожный', 'Присматривается к новым людям'),
-        ('Игривый', 'Любит игрушки и развлечения'),
-        ('Умный', 'Быстро обучается командам')
+        ('Дружелюбный', 'Ладит с людьми'),
+        ('Спокойный', 'Уравновешенный характер'),
+        ('Ласковый', 'Обожает внимание')
         ON CONFLICT (charactername) DO NOTHING;
     """)
     print('[OK] Характеры животных добавлены')
     
-    # 5. Типы активностей (уход) — если таблица существует
-    try:
-        execute_raw_sql("""
-            INSERT INTO activitytypes (activityname, description) VALUES 
-            ('Кормление', 'Регулярное кормление животного'),
-            ('Выгул', 'Прогулка на свежем воздухе'),
-            ('Осмотр', 'Ветеринарный осмотр'),
-            ('Купание', 'Гигиенические процедуры'),
-            ('Прививка', 'Плановая вакцинация'),
-            ('Дрессировка', 'Занятия с кинологом')
-            ON CONFLICT (activityname) DO NOTHING;
-        """)
-        print('[OK] Типы активностей добавлены')
-    except Exception as e:
-        print(f'[WARNING] Типы активностей не добавлены: {e}')
-    
-    # 6. Типы частоты (уход) — если таблица существует
-    try:
-        execute_raw_sql("""
-            INSERT INTO frequencytypes (frequencyname, description) VALUES 
-            ('Ежедневно', 'Каждый день'),
-            ('Раз в неделю', 'Один раз в неделю'),
-            ('Два раза в неделю', 'Дважды в неделю'),
-            ('Ежемесячно', 'Раз в месяц'),
-            ('По требованию', 'По необходимости')
-            ON CONFLICT (frequencyname) DO NOTHING;
-        """)
-        print('[OK] Типы частоты добавлены')
-    except Exception as e:
-        print(f'[WARNING] Типы частоты не добавлены: {e}')
-    
-    # 7. Типы вакцинаций — если таблица существует
-    try:
-        execute_raw_sql("""
-            INSERT INTO vaccinationtypes (vaccinationname, description) VALUES 
-            ('Бешенство', 'Вакцинация от бешенства'),
-            ('Чума плотоядных', 'Вакцинация от чумы'),
-            ('Парвовирус', 'Вакцинация от парвовирусного энтерита'),
-            ('Лептоспироз', 'Вакцинация от лептоспироза'),
-            ('Калицивироз', 'Вакцинация от калицивироза (кошки)'),
-            ('Панлейкопения', 'Вакцинация от панлейкопении (кошки)')
-            ON CONFLICT (vaccinationname) DO NOTHING;
-        """)
-        print('[OK] Типы вакцинаций добавлены')
-    except Exception as e:
-        print(f'[WARNING] Типы вакцинаций не добавлены: {e}')
-    
-    # 8. Породы животных
+    # 5. Породы животных (только самые нужные)
     execute_raw_sql("""
         INSERT INTO breeds (breedname, typeid) 
         SELECT breedname, typeid FROM (VALUES 
             ('Лабрадор', (SELECT typeid FROM animaltypes WHERE typename = 'Собака')),
             ('Немецкая овчарка', (SELECT typeid FROM animaltypes WHERE typename = 'Собака')),
-            ('Дворняга', (SELECT typeid FROM animaltypes WHERE typename = 'Собака')),
-            ('Британская', (SELECT typeid FROM animaltypes WHERE typename = 'Кошка')),
-            ('Сиамская', (SELECT typeid FROM animaltypes WHERE typename = 'Кошка')),
-            ('Дворовая', (SELECT typeid FROM animaltypes WHERE typename = 'Кошка'))
+            ('Британская', (SELECT typeid FROM animaltypes WHERE typename = 'Кошка'))
         ) AS b(breedname, typeid)
         WHERE NOT EXISTS (SELECT 1 FROM breeds WHERE breedname = b.breedname);
     """)
     print('[OK] Породы животных добавлены')
     
-    # 9. Приюты
+    # 6. Приюты (указываем ТОЛЬКО поля, которые есть в таблице и не трогаем createddate)
     execute_raw_sql("""
         INSERT INTO shelters (sheltername, address, phone, email, description, isactive) VALUES 
         ('Центральный приют', 'г. Москва, ул. Приютская, д. 1', '+74951234567', 'central@shelter.ru', 'Главный приют города', true),
@@ -263,13 +209,6 @@ def main():
     print("\n👥 ПОЛЬЗОВАТЕЛИ:")
     for user in USERS_DATA:
         print(f"   {user['role']}: {user['email']} / {user['password']}")
-    
-    print("\n📋 СПРАВОЧНИКИ:")
-    print("   ✓ Статусы животных (Доступен, Пристроен, На рассмотрении)")
-    print("   ✓ Статусы заявок (Pending, Approved, Rejected)")
-    print("   ✓ Типы и породы животных")
-    print("   ✓ Характеры животных")
-    print("   ✓ Приюты (3 шт.)")
     
     print("\n🐕 ТЕСТОВЫЕ ЖИВОТНЫЕ:")
     print("   ✓ Бобик (Лабрадор, Доступен)")
