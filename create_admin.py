@@ -5,7 +5,7 @@ import sys
 import time
 import django
 
-time.sleep(30)
+time.sleep(180)
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'shelter_project.settings')
