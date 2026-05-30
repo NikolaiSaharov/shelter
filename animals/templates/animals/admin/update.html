@@ -223,6 +223,7 @@
               <label class="form-label small fw-semibold">Или укажите URL видео (по одному на строку):</label>
               <textarea class="form-control" name="video_urls" rows="2" placeholder="https://example.com/video1.mp4"></textarea>
             </div>
+            <div id="videoPreview" class="mt-2 d-flex flex-wrap gap-2"></div>
           </div>
 
           <!-- Старое поле для обратной совместимости -->
@@ -382,28 +383,115 @@ document.addEventListener('DOMContentLoaded', function() {
   // Превью загружаемых фотографий
   const photoFilesInput = document.getElementById('photo_files');
   const photoPreview = document.getElementById('photoPreview');
+  const videoFilesInput = document.getElementById('video_files');
+  const videoPreview = document.getElementById('videoPreview');
+
+  let currentPhotoFiles = [];
+  let currentVideoFiles = [];
+
+  function setInputFiles(inputEl, filesArr) {
+    const dt = new DataTransfer();
+    filesArr.forEach(f => dt.items.add(f));
+    inputEl.files = dt.files;
+  }
+
+  function buildPreviewItem({ kind, url, label, onRemove }) {
+    const wrap = document.createElement('div');
+    wrap.className = 'position-relative';
+    wrap.style.width = '120px';
+    wrap.style.height = '120px';
+
+    let bodyEl;
+    if (kind === 'image') {
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = label || '';
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.objectFit = 'cover';
+      img.style.borderRadius = '8px';
+      img.style.border = '2px solid #dee2e6';
+      bodyEl = img;
+    } else {
+      const box = document.createElement('div');
+      box.style.width = '100%';
+      box.style.height = '100%';
+      box.style.borderRadius = '8px';
+      box.style.background = '#000';
+      box.style.display = 'flex';
+      box.style.alignItems = 'center';
+      box.style.justifyContent = 'center';
+      box.style.border = '2px solid #dee2e6';
+      box.innerHTML = '<i class="bi bi-play-circle-fill text-white" style="font-size:3rem;"></i>';
+      bodyEl = box;
+    }
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-sm btn-danger position-absolute top-0 end-0 m-1';
+    btn.style.padding = '2px 6px';
+    btn.style.fontSize = '0.7rem';
+    btn.style.zIndex = '10';
+    btn.title = 'Убрать';
+    btn.innerHTML = '<i class="bi bi-x"></i>';
+    btn.addEventListener('click', onRemove);
+
+    wrap.appendChild(bodyEl);
+    wrap.appendChild(btn);
+    return wrap;
+  }
+
+  function renderPhotoPreview() {
+    if (!photoPreview) return;
+    photoPreview.innerHTML = '';
+    currentPhotoFiles.forEach((file, idx) => {
+      if (!file.type.startsWith('image/')) return;
+      const url = URL.createObjectURL(file);
+      const item = buildPreviewItem({
+        kind: 'image',
+        url,
+        label: file.name,
+        onRemove: () => {
+          try { URL.revokeObjectURL(url); } catch (_) {}
+          currentPhotoFiles.splice(idx, 1);
+          setInputFiles(photoFilesInput, currentPhotoFiles);
+          renderPhotoPreview();
+        },
+      });
+      photoPreview.appendChild(item);
+    });
+  }
+
+  function renderVideoPreview() {
+    if (!videoPreview) return;
+    videoPreview.innerHTML = '';
+    currentVideoFiles.forEach((file, idx) => {
+      if (!file.type.startsWith('video/')) return;
+      const item = buildPreviewItem({
+        kind: 'video',
+        url: '',
+        label: file.name,
+        onRemove: () => {
+          currentVideoFiles.splice(idx, 1);
+          setInputFiles(videoFilesInput, currentVideoFiles);
+          renderVideoPreview();
+        },
+      });
+      videoPreview.appendChild(item);
+    });
+  }
   
   if (photoFilesInput) {
     photoFilesInput.addEventListener('change', function(e) {
-      photoPreview.innerHTML = '';
-      const files = Array.from(e.target.files);
-      files.forEach((file, index) => {
-        if (file.type.startsWith('image/')) {
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            const img = document.createElement('img');
-            img.src = e.target.result;
-            img.style.width = '120px';
-            img.style.height = '120px';
-            img.style.objectFit = 'cover';
-            img.style.borderRadius = '8px';
-            img.style.border = '2px solid #dee2e6';
-            img.className = 'mb-2';
-            photoPreview.appendChild(img);
-          };
-          reader.readAsDataURL(file);
-        }
-      });
+      currentPhotoFiles = Array.from(e.target.files || []);
+      renderPhotoPreview();
+    });
+  }
+
+  if (videoFilesInput) {
+    videoFilesInput.addEventListener('change', function(e) {
+      currentVideoFiles = Array.from(e.target.files || []);
+      renderVideoPreview();
     });
   }
   

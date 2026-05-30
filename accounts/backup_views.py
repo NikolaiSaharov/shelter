@@ -8,7 +8,7 @@ from django.utils.encoding import smart_str
 from animals.mixins import AdminRequiredMixin
 from .models import User, UserProfile, Role
 from .utils import get_user_id_from_jwt
-from animals.models import Animal, AnimalType, Breed, AnimalStatus, AnimalCharacter
+from animals.models import Animal, AnimalType, Breed, AnimalStatus, AnimalCharacter, AnimalMedia
 from news.models import News
 import json
 import decimal
@@ -83,8 +83,9 @@ class BackupCreateView(AdminRequiredMixin, View):
             ]
             
             # Основные данные (Users, UserProfiles, Animals, News)
-            backup_data['data']['Users'] = [
-                {
+            backup_data['data']['Users'] = []
+            for u in User.objects.select_related('role').all():
+                user_data = {
                     'UserID': u.user_id,
                     'Email': u.email,
                     'PasswordHash': u.password_hash,
@@ -93,10 +94,10 @@ class BackupCreateView(AdminRequiredMixin, View):
                     'MiddleName': u.middle_name,
                     'Phone': u.phone,
                     'RegistrationDate': u.registration_date.isoformat() if u.registration_date else None,
-                    'RoleID': u.role_id
+                    'RoleID': u.role_id,
+                    'ShelterID': getattr(u, 'shelter_id', None)  # Добавляем shelter_id
                 }
-                for u in User.objects.select_related('role').all()
-            ]
+                backup_data['data']['Users'].append(user_data)
             
             backup_data['data']['UserProfiles'] = [
                 {
@@ -111,8 +112,9 @@ class BackupCreateView(AdminRequiredMixin, View):
                 for p in UserProfile.objects.all()
             ]
             
-            backup_data['data']['Animals'] = [
-                {
+            backup_data['data']['Animals'] = []
+            for a in Animal.objects.select_related('breed', 'status', 'character').all():
+                animal_data = {
                     'AnimalID': a.animal_id,
                     'AnimalName': a.animal_name,
                     'Age': a.age,
@@ -125,31 +127,44 @@ class BackupCreateView(AdminRequiredMixin, View):
                     'CharacterID': a.character_id,
                     'Height': float(a.height) if a.height else None,
                     'AnimalWeight': float(a.animal_weight) if a.animal_weight else None,
-                    'AdmissionDate': a.admission_date.isoformat() if a.admission_date else None
+                    'AdmissionDate': a.admission_date.isoformat() if a.admission_date else None,
+                    'ShelterID': getattr(a, 'shelter_id', None)  # Добавляем shelter_id
                 }
-                for a in Animal.objects.select_related('breed', 'status', 'character').all()
-            ]
+                backup_data['data']['Animals'].append(animal_data)
+
+            # Галерея животных (фото/видео)
+            backup_data['data']['AnimalMedia'] = []
+            for m in AnimalMedia.objects.select_related('animal').all().order_by('animal_id', 'display_order', 'media_id'):
+                backup_data['data']['AnimalMedia'].append({
+                    'MediaID': m.media_id,
+                    'AnimalID': m.animal_id,
+                    'MediaType': m.media_type,
+                    'MediaPath': m.media_path,
+                    'DisplayOrder': m.display_order,
+                    'IsPrimary': bool(m.is_primary),
+                    'CreatedDate': m.created_date.isoformat() if getattr(m, 'created_date', None) else None,
+                })
             
-            backup_data['data']['News'] = [
-                {
+            backup_data['data']['News'] = []
+            for n in News.objects.all():
+                news_data = {
                     'NewsID': n.news_id,
                     'UserID': n.user_id,
                     'Title': n.title,
                     'Content': n.content,
                     'PostDate': n.post_date.isoformat() if n.post_date else None,
                     'IsPublished': n.is_published,
-                    'ImagePath': n.image_path
+                    'ImagePath': n.image_path,
+                    'ShelterID': getattr(n, 'shelter_id', None)  # Добавляем shelter_id
                 }
-                for n in News.objects.all()
-            ]
+                backup_data['data']['News'].append(news_data)
             
             # Медицинские записи и вакцинации (используем raw SQL)
-            from django.db import connection
             with connection.cursor() as cursor:
                 # Медицинские записи
                 cursor.execute("""
-                    SELECT RecordID, AnimalID, ConditionName, DiagnosisDate, Treatment, Status, Notes
-                    FROM AnimalMedicalRecords
+                    SELECT recordid, animalid, conditionname, diagnosisdate, treatment, status, notes
+                    FROM animalmedicalrecords
                 """)
                 backup_data['data']['AnimalMedicalRecords'] = []
                 for row in cursor.fetchall():
@@ -165,8 +180,8 @@ class BackupCreateView(AdminRequiredMixin, View):
                 
                 # Вакцинации (связи животных с типами вакцинаций)
                 cursor.execute("""
-                    SELECT AnimalVaccinationID, AnimalID, VaccinationTypeID
-                    FROM AnimalVaccinations
+                    SELECT animalvaccinationid, animalid, vaccinationtypeid
+                    FROM animalvaccinations
                 """)
                 backup_data['data']['AnimalVaccinations'] = []
                 for row in cursor.fetchall():
@@ -178,8 +193,8 @@ class BackupCreateView(AdminRequiredMixin, View):
                 
                 # Записи о проведенных вакцинациях
                 cursor.execute("""
-                    SELECT RecordID, AnimalVaccinationID, VaccinationDate
-                    FROM VaccinationRecords
+                    SELECT recordid, animalvaccinationid, vaccinationdate
+                    FROM vaccinationrecords
                 """)
                 backup_data['data']['VaccinationRecords'] = []
                 for row in cursor.fetchall():
@@ -191,8 +206,8 @@ class BackupCreateView(AdminRequiredMixin, View):
                 
                 # Сообщения
                 cursor.execute("""
-                    SELECT MessageID, SenderID, SubjectMessages, MessageText, SendDate, ParentMessageID, IsRead, RecipientRole
-                    FROM Messages
+                    SELECT messageid, senderid, subjectmessages, messagetext, senddate, parentmessageid, isread, recipientrole
+                    FROM messages
                 """)
                 backup_data['data']['Messages'] = []
                 for row in cursor.fetchall():
@@ -209,8 +224,8 @@ class BackupCreateView(AdminRequiredMixin, View):
                 
                 # Пожертвования
                 cursor.execute("""
-                    SELECT DonationID, UserID, AnimalID, Amount, DonationDate, Comment, IsApproved
-                    FROM Donations
+                    SELECT donationid, userid, animalid, amount, donationdate, comment, isapproved
+                    FROM donations
                 """)
                 backup_data['data']['Donations'] = []
                 for row in cursor.fetchall():
@@ -226,14 +241,13 @@ class BackupCreateView(AdminRequiredMixin, View):
                 
                 # Заявки на усыновление
                 cursor.execute("""
-                    SELECT a.ApplicationID, a.UserID, a.AnimalID, a.ApplicationDate, a.StatusID, ast.StatusName, 
-                           a.Reason, a.Experience, a.HousingConditions, a.Comment
-                    FROM Applications a
-                    JOIN ApplicationStatuses ast ON a.StatusID = ast.StatusID
+                    SELECT a.applicationid, a.userid, a.animalid, a.applicationdate, a.statusid, ast.statusname, 
+                           a.reason, a.experience, a.housingconditions, a.comment
+                    FROM applications a
+                    JOIN applicationstatuses ast ON a.statusid = ast.statusid
                 """)
                 backup_data['data']['Applications'] = []
                 for row in cursor.fetchall():
-                    # Для обратной совместимости сохраняем IsApproved на основе StatusName
                     status_name = row[5] if len(row) > 5 else None
                     is_approved = (status_name == 'Approved') if status_name else None
                     
@@ -244,7 +258,7 @@ class BackupCreateView(AdminRequiredMixin, View):
                         'ApplicationDate': row[3].isoformat() if row[3] else None,
                         'StatusID': row[4],
                         'StatusName': status_name,
-                        'IsApproved': is_approved,  # Для обратной совместимости
+                        'IsApproved': is_approved,
                         'Reason': row[6] if len(row) > 6 else None,
                         'Experience': row[7] if len(row) > 7 else None,
                         'HousingConditions': row[8] if len(row) > 8 else None,
@@ -311,6 +325,7 @@ class BackupRestoreView(AdminRequiredMixin, View):
                             'messages',
                             'news',
                             'userprofiles',
+                            'animalmedia',
                             'animals',
                             'users',
                             'breeds',
@@ -412,7 +427,7 @@ class BackupRestoreView(AdminRequiredMixin, View):
                             except Exception as e:
                                 print(f"Error restoring Breeds: {e}")
                         
-                        # 2. Восстанавливаем Users
+                        # 2. Восстанавливаем Users (с shelterid)
                         if 'Users' in backup_data['data'] and backup_data['data']['Users']:
                             try:
                                 for user in backup_data['data']['Users']:
@@ -423,9 +438,11 @@ class BackupRestoreView(AdminRequiredMixin, View):
                                         except:
                                             reg_date = None
                                     
+                                    shelter_id = user.get('ShelterID')
+                                    
                                     cursor.execute("""
-                                        INSERT INTO users (userid, email, passwordhash, firstname, lastname, middlename, phone, registrationdate, roleid)
-                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                        INSERT INTO users (userid, email, passwordhash, firstname, lastname, middlename, phone, registrationdate, roleid, shelterid)
+                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                                         ON CONFLICT (userid) DO UPDATE SET
                                             email = EXCLUDED.email,
                                             passwordhash = EXCLUDED.passwordhash,
@@ -434,7 +451,8 @@ class BackupRestoreView(AdminRequiredMixin, View):
                                             middlename = EXCLUDED.middlename,
                                             phone = EXCLUDED.phone,
                                             registrationdate = EXCLUDED.registrationdate,
-                                            roleid = EXCLUDED.roleid
+                                            roleid = EXCLUDED.roleid,
+                                            shelterid = EXCLUDED.shelterid
                                     """, [
                                         user['UserID'],
                                         user['Email'],
@@ -444,7 +462,8 @@ class BackupRestoreView(AdminRequiredMixin, View):
                                         user.get('MiddleName'),
                                         user['Phone'],
                                         reg_date,
-                                        user['RoleID']
+                                        user['RoleID'],
+                                        shelter_id
                                     ])
                                 print(f"Restored {len(backup_data['data']['Users'])} users")
                             except Exception as e:
@@ -499,7 +518,7 @@ class BackupRestoreView(AdminRequiredMixin, View):
                             except Exception as e:
                                 print(f"Error restoring UserProfiles: {e}")
                         
-                        # 4. Восстанавливаем Animals
+                        # 4. Восстанавливаем Animals (с shelterid)
                         if 'Animals' in backup_data['data'] and backup_data['data']['Animals']:
                             try:
                                 for animal in backup_data['data']['Animals']:
@@ -510,9 +529,11 @@ class BackupRestoreView(AdminRequiredMixin, View):
                                         except:
                                             admission_date = None
                                     
+                                    shelter_id = animal.get('ShelterID')
+                                    
                                     cursor.execute("""
-                                        INSERT INTO animals (animalid, animalname, age, gender, vaccinated, description, imagepath, statusid, breedid, characterid, height, animalweight, admissiondate)
-                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                        INSERT INTO animals (animalid, animalname, age, gender, vaccinated, description, imagepath, statusid, breedid, characterid, height, animalweight, admissiondate, shelterid)
+                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                                         ON CONFLICT (animalid) DO UPDATE SET
                                             animalname = EXCLUDED.animalname,
                                             age = EXCLUDED.age,
@@ -525,7 +546,8 @@ class BackupRestoreView(AdminRequiredMixin, View):
                                             characterid = EXCLUDED.characterid,
                                             height = EXCLUDED.height,
                                             animalweight = EXCLUDED.animalweight,
-                                            admissiondate = EXCLUDED.admissiondate
+                                            admissiondate = EXCLUDED.admissiondate,
+                                            shelterid = EXCLUDED.shelterid
                                     """, [
                                         animal['AnimalID'],
                                         animal['AnimalName'],
@@ -539,13 +561,65 @@ class BackupRestoreView(AdminRequiredMixin, View):
                                         animal.get('CharacterID'),
                                         animal.get('Height'),
                                         animal.get('AnimalWeight'),
-                                        admission_date
+                                        admission_date,
+                                        shelter_id
                                     ])
                                 print(f"Restored {len(backup_data['data']['Animals'])} animals")
                             except Exception as e:
                                 print(f"Error restoring Animals: {e}")
+
+                        # 4.1 Восстанавливаем галерею животных (AnimalMedia)
+                        if 'AnimalMedia' in backup_data['data'] and backup_data['data']['AnimalMedia']:
+                            try:
+                                for media in backup_data['data']['AnimalMedia']:
+                                    created_date = media.get('CreatedDate')
+                                    if created_date:
+                                        try:
+                                            created_date = datetime.fromisoformat(created_date.replace('Z', '+00:00'))
+                                        except Exception:
+                                            created_date = None
+
+                                    cursor.execute("""
+                                        INSERT INTO animalmedia
+                                          (mediaid, animalid, mediatype, mediapath, displayorder, isprimary, createddate)
+                                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                                        ON CONFLICT (mediaid) DO UPDATE SET
+                                          animalid = EXCLUDED.animalid,
+                                          mediatype = EXCLUDED.mediatype,
+                                          mediapath = EXCLUDED.mediapath,
+                                          displayorder = EXCLUDED.displayorder,
+                                          isprimary = EXCLUDED.isprimary,
+                                          createddate = EXCLUDED.createddate
+                                    """, [
+                                        media['MediaID'],
+                                        media['AnimalID'],
+                                        media.get('MediaType'),
+                                        media.get('MediaPath'),
+                                        media.get('DisplayOrder', 0),
+                                        bool(media.get('IsPrimary', False)),
+                                        created_date,
+                                    ])
+
+                                # Синхронизируем Animals.imagepath с главным фото из AnimalMedia (если есть)
+                                cursor.execute("""
+                                    UPDATE animals a
+                                    SET imagepath = LEFT(src.mediapath, 255)
+                                    FROM (
+                                      SELECT DISTINCT ON (animalid)
+                                        animalid,
+                                        mediapath
+                                      FROM animalmedia
+                                      WHERE mediatype = 'Photo'
+                                      ORDER BY animalid, isprimary DESC, displayorder ASC, mediaid ASC
+                                    ) src
+                                    WHERE a.animalid = src.animalid
+                                """)
+
+                                print(f"Restored {len(backup_data['data']['AnimalMedia'])} animal media files")
+                            except Exception as e:
+                                print(f"Error restoring AnimalMedia: {e}")
                         
-                        # 5. Восстанавливаем News
+                        # 5. Восстанавливаем News (с shelterid)
                         if 'News' in backup_data['data'] and backup_data['data']['News']:
                             try:
                                 for news in backup_data['data']['News']:
@@ -556,16 +630,19 @@ class BackupRestoreView(AdminRequiredMixin, View):
                                         except:
                                             post_date = None
                                     
+                                    shelter_id = news.get('ShelterID')
+                                    
                                     cursor.execute("""
-                                        INSERT INTO news (newsid, userid, title, content, postdate, ispublished, imagepath)
-                                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                                        INSERT INTO news (newsid, userid, title, content, postdate, ispublished, imagepath, shelterid)
+                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                                         ON CONFLICT (newsid) DO UPDATE SET
                                             userid = EXCLUDED.userid,
                                             title = EXCLUDED.title,
                                             content = EXCLUDED.content,
                                             postdate = EXCLUDED.postdate,
                                             ispublished = EXCLUDED.ispublished,
-                                            imagepath = EXCLUDED.imagepath
+                                            imagepath = EXCLUDED.imagepath,
+                                            shelterid = EXCLUDED.shelterid
                                     """, [
                                         news['NewsID'],
                                         news['UserID'],
@@ -573,7 +650,8 @@ class BackupRestoreView(AdminRequiredMixin, View):
                                         news['Content'],
                                         post_date,
                                         news['IsPublished'],
-                                        news.get('ImagePath')
+                                        news.get('ImagePath'),
+                                        shelter_id
                                     ])
                                 print(f"Restored {len(backup_data['data']['News'])} news items")
                             except Exception as e:
@@ -802,7 +880,12 @@ class BackupRestoreView(AdminRequiredMixin, View):
                             except Exception as e:
                                 print(f"Error restoring Applications: {e}")
                         
-                        messages.success(request, 'Данные успешно восстановлены из бэкапа')
+                        # =========================================================
+                        # АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕДОВАТЕЛЬНОСТЕЙ (SEQUENCES)
+                        # =========================================================
+                        self.sync_postgres_sequences(cursor)
+                        
+                        messages.success(request, 'Данные успешно восстановлены из бэкапа и последовательности синхронизированы')
                     
                     except Exception as e:
                         print(f"Restore error: {str(e)}")
@@ -823,3 +906,52 @@ class BackupRestoreView(AdminRequiredMixin, View):
         except Exception as e:
             messages.error(request, f'Ошибка при восстановлении: {str(e)}')
             return render(request, 'accounts/backup_restore.html')
+    
+    def sync_postgres_sequences(self, cursor):
+        """Синхронизирует sequence/identity в PostgreSQL (setval до MAX(id)) после импорта данных."""
+        try:
+            # serial/identity колонки: либо is_identity='YES', либо default nextval('...')::regclass
+            cursor.execute(
+                """
+                SELECT
+                    c.table_name,
+                    c.column_name
+                FROM information_schema.columns c
+                JOIN information_schema.tables t
+                  ON t.table_schema = c.table_schema AND t.table_name = c.table_name
+                WHERE c.table_schema = 'public'
+                  AND t.table_type = 'BASE TABLE'
+                  AND (
+                        c.is_identity = 'YES'
+                        OR c.column_default LIKE 'nextval(%'
+                  )
+                ORDER BY c.table_name, c.ordinal_position
+                """
+            )
+            pairs = cursor.fetchall()
+            
+            updated = 0
+            for table_name, column_name in pairs:
+                # pg_get_serial_sequence works for both serial and identity-backed sequences
+                cursor.execute("SELECT pg_get_serial_sequence(%s, %s)", [table_name, column_name])
+                seq_row = cursor.fetchone()
+                seq_name = seq_row[0] if seq_row else None
+                if not seq_name:
+                    continue
+                
+                cursor.execute(f'SELECT COALESCE(MAX("{column_name}"), 0) FROM "{table_name}"')
+                max_id = int(cursor.fetchone()[0] or 0)
+                
+                # Если таблица пустая, ставим 1 и is_called=false, чтобы следующий nextval вернул 1
+                if max_id <= 0:
+                    cursor.execute("SELECT setval(%s, %s, false)", [seq_name, 1])
+                else:
+                    # setval(seq, max, true) => следующий nextval будет max+1
+                    cursor.execute("SELECT setval(%s, %s, true)", [seq_name, max_id])
+                updated += 1
+            
+            print(f"Sequences synchronized: {updated}")
+            
+        except Exception as e:
+            print(f"Error syncing sequences: {e}")
+            raise
