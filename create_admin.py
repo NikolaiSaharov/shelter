@@ -53,6 +53,16 @@ def execute_raw_sql(sql):
     with connection.cursor() as cursor:
         cursor.execute(sql)
 
+def create_roles():
+    """Создаёт роли, если они не существуют"""
+    roles_data = ['Admin', 'Manager', 'Guest']
+    for role_name in roles_data:
+        role, created = Role.objects.get_or_create(role_name=role_name)
+        if created:
+            print(f'[OK] Роль "{role_name}" создана')
+        else:
+            print(f'[OK] Роль "{role_name}" уже существует')
+
 def seed_dictionaries():
     """Заполняет справочные таблицы начальными данными (только те, которые точно есть в схеме)"""
     
@@ -190,6 +200,10 @@ def main():
     print("\nОжидание 5 секунд...")
     time.sleep(5)
     
+    # СОЗДАЁМ РОЛИ (ДОБАВЛЕНО!)
+    print("\n--- СОЗДАНИЕ РОЛЕЙ ---")
+    create_roles()
+    
     # Заполняем справочники
     print("\n--- ЗАПОЛНЕНИЕ СПРАВОЧНИКОВ ---")
     seed_dictionaries()
@@ -219,4 +233,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
