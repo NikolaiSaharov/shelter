@@ -13,7 +13,7 @@
     <div class="col-lg-4 mb-4">
       <div class="card shadow-sm" style="border-radius:16px; overflow:hidden;">
         {% if animal.image_path %}
-          <img src="{{ animal.image_path }}" class="card-img-top" alt="{{ animal.name }}" style="height:400px; object-fit:fill;">
+          <img src="{{ animal.image.url }}" class="card-img-top" alt="{{ animal.name }}" style="height:400px; object-fit:fill;">
         {% else %}
           <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height:400px;">
             <i class="bi bi-image" style="font-size:5rem; color:#ccc;"></i>
