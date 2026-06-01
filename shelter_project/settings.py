@@ -132,10 +132,12 @@ USE_I18N = True
 USE_TZ = True
 
 # Static files
+# Static files
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Временно отключаем ManifestStaticFilesStorage из-за проблем с glyphicons
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 # Cloudinary Configuration
 import cloudinary
