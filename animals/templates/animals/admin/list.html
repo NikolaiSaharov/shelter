@@ -65,7 +65,7 @@
             <td class="align-middle">{{ animal.animal_id }}</td>
             <td class="align-middle">
               {% if animal.image_path %}
-                <img src="{{ animal.image_path }}" alt="{{ animal.animal_name }}" 
+                <img src="{{ animal.image.url }}" alt="{{ animal.animal_name }}" 
                      style="width:60px;height:60px;object-fit:cover;border-radius:8px;">
               {% else %}
                 <div class="d-flex align-items-center justify-content-center" 
