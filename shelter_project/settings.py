@@ -28,16 +28,18 @@ if ALLOWED_HOSTS_ENV:
 else:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com']
 
+# -------------------------------------------------------------------
 # Application definition
+# -------------------------------------------------------------------
 INSTALLED_APPS = [
-    'cloudinary_storage',  # ДОБАВЛЕНО: должен быть выше staticfiles
+    'cloudinary_storage',   # ДОЛЖЕН БЫТЬ ПЕРВЫМ
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'cloudinary',  # ДОБАВЛЕНО
+    'cloudinary',           # ПОСЛЕ staticfiles
     'rest_framework',
     'rest_framework_simplejwt',
     'drf_spectacular',
@@ -86,18 +88,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'shelter_project.wsgi.application'
 
-# ========== НАСТРОЙКА БАЗЫ ДАННЫХ (РАБОТАЕТ БЕЗ ДОП. БИБЛИОТЕК) ==========
+# -------------------------------------------------------------------
+# Database
+# -------------------------------------------------------------------
 DATABASE_URL = os.environ.get('DATABASE_URL')
-
 if DATABASE_URL:
-    # Парсим DATABASE_URL вручную через regex
     pattern = r'postgresql://([^:]+):([^@]+)@([^:]+):?(\d+)?/([^?]+)'
     match = re.match(pattern, DATABASE_URL)
-    
     if match:
         db_user, db_password, db_host, db_port, db_name = match.groups()
         db_port = db_port or '5432'
-        
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.postgresql',
@@ -113,7 +113,6 @@ if DATABASE_URL:
     else:
         raise ValueError(f"Invalid DATABASE_URL format")
 else:
-    # Локальная разработка
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -125,7 +124,9 @@ else:
         }
     }
 
+# -------------------------------------------------------------------
 # Password validation
+# -------------------------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -133,23 +134,41 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+# -------------------------------------------------------------------
 # Internationalization
+# -------------------------------------------------------------------
 LANGUAGE_CODE = 'ru-ru'
 TIME_ZONE = 'Europe/Moscow'
 USE_I18N = True
 USE_TZ = True
 
-# Static files
+# -------------------------------------------------------------------
+# Static & Media files
+# -------------------------------------------------------------------
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Media files - Cloudinary (ДОБАВЛЕНО)
-MEDIA_URL = '/media/'  # оставлен для обратной совместимости
-# MEDIA_ROOT больше не используется, файлы хранятся в Cloudinary
+# -------------------------------------------------------------------
+# Cloudinary Configuration (Media Storage)
+# -------------------------------------------------------------------
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
+cloudinary.config(
+    CLOUD_NAME = 'dpgmufhxd',
+    API_KEY = '132519868974749',
+    API_SECRET = 'RNsVjtbdTfKfhYe_rJ5axQeDJJQ',
+    SECURE = True
+)
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+# -------------------------------------------------------------------
 # DRF & Spectacular
+# -------------------------------------------------------------------
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -159,7 +178,6 @@ REST_FRAMEWORK = {
     ],
 }
 
-# JWT Settings
 from datetime import timedelta
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
@@ -181,7 +199,9 @@ SPECTACULAR_SETTINGS = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# -------------------------------------------------------------------
 # Email settings (Mail.ru SMTP)
+# -------------------------------------------------------------------
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.mail.ru'
 EMAIL_PORT = int(os.environ.get('MAILRU_EMAIL_PORT', '465'))
@@ -191,26 +211,11 @@ EMAIL_USE_SSL = True
 EMAIL_USE_TLS = False
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER or 'no-reply@example.com'
 
+# -------------------------------------------------------------------
 # Security
+# -------------------------------------------------------------------
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-
-# =========================================================
-# CLOUDINARY CONFIGURATION (ДОБАВЛЕНО)
-# =========================================================
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
-
-cloudinary.config(
-    CLOUD_NAME = 'dpgmufhxd',
-    API_KEY = '132519868974749',
-    API_SECRET = 'RNsVjtbdTfKfhYe_rJ5axQeDJJQ',
-    SECURE = True
-)
-
-# Media files will be stored in Cloudinary
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
