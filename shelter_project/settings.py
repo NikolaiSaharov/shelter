@@ -8,20 +8,15 @@ import re
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Загрузка .env файла
 try:
     from dotenv import load_dotenv
     load_dotenv(BASE_DIR / '.env')
 except ImportError:
     pass
 
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-p6jtvur592d(jy^_lol&a-cs=zl1=@%5h)v_lt5vtp5^p8g)2r')
-
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-# ALLOWED_HOSTS
 ALLOWED_HOSTS_ENV = os.environ.get('ALLOWED_HOSTS', '')
 if ALLOWED_HOSTS_ENV:
     ALLOWED_HOSTS = ALLOWED_HOSTS_ENV.split(',')
@@ -29,17 +24,15 @@ else:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com']
 
 # -------------------------------------------------------------------
-# Application definition
-# -------------------------------------------------------------------
 INSTALLED_APPS = [
-    'cloudinary_storage',   # ДОЛЖЕН БЫТЬ ПЕРВЫМ
+    'cloudinary_storage',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'cloudinary',           # ПОСЛЕ staticfiles
+    'cloudinary',
     'rest_framework',
     'rest_framework_simplejwt',
     'drf_spectacular',
@@ -124,9 +117,6 @@ else:
         }
     }
 
-# -------------------------------------------------------------------
-# Password validation
-# -------------------------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -135,23 +125,22 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # -------------------------------------------------------------------
-# Internationalization
-# -------------------------------------------------------------------
 LANGUAGE_CODE = 'ru-ru'
 TIME_ZONE = 'Europe/Moscow'
 USE_I18N = True
 USE_TZ = True
 
 # -------------------------------------------------------------------
-# Static & Media files
+# Static files (исправлено)
 # -------------------------------------------------------------------
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Отключаем CompressedManifestStaticFilesStorage из-за проблем с glyphicons
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
 
 # -------------------------------------------------------------------
-# Cloudinary Configuration (Media Storage)
+# Cloudinary
 # -------------------------------------------------------------------
 import cloudinary
 import cloudinary.uploader
@@ -166,8 +155,6 @@ cloudinary.config(
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
-# -------------------------------------------------------------------
-# DRF & Spectacular
 # -------------------------------------------------------------------
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
@@ -185,7 +172,6 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
-    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'user_id',
     'USER_ID_CLAIM': 'user_id',
 }
@@ -199,9 +185,6 @@ SPECTACULAR_SETTINGS = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# -------------------------------------------------------------------
-# Email settings (Mail.ru SMTP)
-# -------------------------------------------------------------------
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.mail.ru'
 EMAIL_PORT = int(os.environ.get('MAILRU_EMAIL_PORT', '465'))
@@ -211,9 +194,6 @@ EMAIL_USE_SSL = True
 EMAIL_USE_TLS = False
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER or 'no-reply@example.com'
 
-# -------------------------------------------------------------------
-# Security
-# -------------------------------------------------------------------
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = True
