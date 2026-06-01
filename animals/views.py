@@ -257,7 +257,7 @@ class AnimalCreateView(AdminRequiredMixin, View):
         gender = request.POST.get('gender', '').strip()
         vaccinated = request.POST.get('vaccinated') == 'on'
         description = (request.POST.get('description') or '').strip() or None
-        image_file = request.FILES.get('image')
+        image_file = request.FILES.get('image') or request.FILES.get('image_file')
         breed_id = request.POST.get('breed_id')
         status_id = request.POST.get('status_id')
         if not status_id:
