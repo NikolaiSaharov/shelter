@@ -19,7 +19,7 @@
                 {% endfor %}
               {% elif animal.image_path %}
                 <div class="carousel-item active" style="height:100%;">
-                  <img src="{{ animal.image_path }}" class="d-block w-100" style="height:100%; object-fit:cover;" alt="{{ animal.animal_name }}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='{% static 'no-photo.png' %}';">
+                  <img src="{{ animal.image.url }}" class="d-block w-100" style="height:100%; object-fit:cover;" alt="{{ animal.animal_name }}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='{% static 'no-photo.png' %}';">
                 </div>
               {% endif %}
               
