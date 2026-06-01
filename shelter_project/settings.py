@@ -30,12 +30,14 @@ else:
 
 # Application definition
 INSTALLED_APPS = [
+    'cloudinary_storage',  # ДОБАВЛЕНО: должен быть выше staticfiles
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'cloudinary',  # ДОБАВЛЕНО
     'rest_framework',
     'rest_framework_simplejwt',
     'drf_spectacular',
@@ -142,8 +144,10 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+
+# Media files - Cloudinary (ДОБАВЛЕНО)
+MEDIA_URL = '/media/'  # оставлен для обратной совместимости
+# MEDIA_ROOT больше не используется, файлы хранятся в Cloudinary
 
 # DRF & Spectacular
 REST_FRAMEWORK = {
@@ -163,6 +167,7 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'user_id',
     'USER_ID_CLAIM': 'user_id',
 }
@@ -192,3 +197,20 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+
+# =========================================================
+# CLOUDINARY CONFIGURATION (ДОБАВЛЕНО)
+# =========================================================
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
+cloudinary.config(
+    CLOUD_NAME = 'dpgmufhxd',
+    API_KEY = '132519868974749',
+    API_SECRET = 'RNsVjtbdTfKfhYe_rJ5axQeDJJQ',
+    SECURE = True
+)
+
+# Media files will be stored in Cloudinary
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
