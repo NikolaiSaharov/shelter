@@ -23,7 +23,7 @@ if ALLOWED_HOSTS_ENV:
 else:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com']
 
-# -------------------------------------------------------------------
+# Application definition
 INSTALLED_APPS = [
     'cloudinary_storage',
     'django.contrib.admin',
@@ -81,9 +81,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'shelter_project.wsgi.application'
 
-# -------------------------------------------------------------------
 # Database
-# -------------------------------------------------------------------
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
     pattern = r'postgresql://([^:]+):([^@]+)@([^:]+):?(\d+)?/([^?]+)'
@@ -117,6 +115,7 @@ else:
         }
     }
 
+# Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -124,24 +123,19 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# -------------------------------------------------------------------
+# Internationalization
 LANGUAGE_CODE = 'ru-ru'
 TIME_ZONE = 'Europe/Moscow'
 USE_I18N = True
 USE_TZ = True
 
-# -------------------------------------------------------------------
-# Static files (исправлено)
-# -------------------------------------------------------------------
+# Static files (ИСПРАВЛЕНО)
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-# Отключаем CompressedManifestStaticFilesStorage из-за проблем с glyphicons
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
-# -------------------------------------------------------------------
-# Cloudinary
-# -------------------------------------------------------------------
+# Cloudinary Configuration
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
@@ -155,7 +149,7 @@ cloudinary.config(
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
-# -------------------------------------------------------------------
+# DRF & Spectacular
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -185,6 +179,7 @@ SPECTACULAR_SETTINGS = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Email settings (Mail.ru SMTP)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.mail.ru'
 EMAIL_PORT = int(os.environ.get('MAILRU_EMAIL_PORT', '465'))
@@ -194,6 +189,7 @@ EMAIL_USE_SSL = True
 EMAIL_USE_TLS = False
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER or 'no-reply@example.com'
 
+# Security
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = True
