@@ -70,7 +70,7 @@
       <div class="card h-100 shadow-sm" style="border-radius:16px; overflow:hidden; transition:transform 0.2s;">
         <a href="{% if all_shelters_mode %}{% url 'animal_card_detail_all_shelters' animal.id %}{% else %}{% url 'animal_card_detail' animal.id %}{% endif %}" class="text-decoration-none text-reset">
           {% if animal.image_path %}
-            <img src="{{ animal.image_path }}" class="card-img-top" alt="{{ animal.name }}" style="height:250px; object-fit:fill;">
+            <img src="{{ animal.image.url }}" class="card-img-top" alt="{{ animal.name }}" style="height:250px; object-fit:fill;">
           {% else %}
             <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height:250px;">
               <i class="bi bi-image" style="font-size:3rem; color:#ccc;"></i>
