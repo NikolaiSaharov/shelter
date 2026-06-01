@@ -207,7 +207,7 @@
                 <div class="card h-100 shadow-sm animal-card" style="border-radius:16px; overflow:hidden; transition:transform 0.2s, box-shadow 0.2s;">
                     <div class="animal-card-media">
                         {% if animal.image_path %}
-                            <img src="{{ animal.image_path }}" class="animal-card-image" alt="{{ animal.animal_name }}">
+                            <img src="{{ animal.image.url }}" class="animal-card-image" alt="{{ animal.animal_name }}">
                         {% else %}
                             <div class="h-100 w-100 d-flex align-items-center justify-content-center">
                                 <i class="bi bi-image" style="font-size:4rem; color:#ccc;"></i>
