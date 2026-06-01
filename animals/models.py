@@ -73,7 +73,16 @@ class Animal(models.Model):
     gender = models.CharField(db_column='gender', max_length=10)
     vaccinated = models.BooleanField(db_column='vaccinated', default=False)
     description = models.TextField(db_column='description', null=True, blank=True)
-    image_path = models.CharField(db_column='imagepath', max_length=255, null=True, blank=True)
+    
+    # ИЗМЕНЕНО: CharField на ImageField для Cloudinary
+    image = models.ImageField(
+        db_column='imagepath', 
+        upload_to='animals/', 
+        null=True, 
+        blank=True, 
+        verbose_name='Изображение'
+    )
+    
     status = models.ForeignKey(AnimalStatus, models.DO_NOTHING, db_column='statusid', default=1)
     breed = models.ForeignKey(Breed, models.CASCADE, db_column='breedid')
     character = models.ForeignKey(AnimalCharacter, models.SET_NULL, db_column='characterid', null=True, blank=True)
@@ -86,6 +95,7 @@ class Animal(models.Model):
         db_table = 'animals'
         verbose_name = 'Животное'
         verbose_name_plural = 'Животные'
+    
     def __str__(self):
         return self.animal_name
 
